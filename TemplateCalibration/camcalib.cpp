@@ -1,7 +1,11 @@
 #include "camcalib.h"
 #include "ui_camcalib.h"
 
-#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv/cv.hpp"
+
+
+using namespace std;
+using namespace cv;
 
 CamCalib::CamCalib(QWidget *parent) :
     QMainWindow(parent),
@@ -13,6 +17,9 @@ CamCalib::CamCalib(QWidget *parent) :
 CamCalib::~CamCalib()
 {
     delete ui;
+    //string filename = "../build-camera_calibration-Desktop_Qt_5_5_1_GCC_64bit-Default/camera_calibration";
+    //string s = "pkill -9 -f " + filename;
+    //system(s.c_str());
 }
 
 void CamCalib::on_startvideoButton_clicked()
@@ -28,6 +35,7 @@ void CamCalib::on_startvideoButton_clicked()
     //Falls konvertieren nicht möglich, Fehler melden
     //Ausgabe der Bilder
     //Fenster schließen
+
 }
 
 void CamCalib::on_start2DButton_clicked()
@@ -47,6 +55,8 @@ void CamCalib::on_start2DButton_clicked()
     //add object points
     //Video Anzeigen
     //Kalibrierung mit gefundenen Punkten
+
+    system("../build-camera_calibration-*/camera_calibration");
 }
 
 void CamCalib::on_start3DButton_clicked()
