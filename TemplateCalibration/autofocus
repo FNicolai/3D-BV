@@ -1,2 +1,0 @@
-uvcdynctrl -d video0 -s 'Focus, Auto' 0
-uvcdynctrl -d video1 -s 'Focus, Auto' 0
