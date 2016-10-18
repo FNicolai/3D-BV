@@ -1,11 +1,10 @@
 #include "camcalib.h"
 #include "ui_camcalib.h"
 
-#include "opencv/cv.hpp"
-
+#include "camera_calibration.h"
+#include "video_stream.h"
 
 using namespace std;
-using namespace cv;
 
 CamCalib::CamCalib(QWidget *parent) :
     QMainWindow(parent),
@@ -35,7 +34,8 @@ void CamCalib::on_startvideoButton_clicked()
     //Falls konvertieren nicht möglich, Fehler melden
     //Ausgabe der Bilder
     //Fenster schließen
-
+    Video_Stream video_stream;
+    video_stream.start();
 }
 
 void CamCalib::on_start2DButton_clicked()
@@ -56,7 +56,8 @@ void CamCalib::on_start2DButton_clicked()
     //Video Anzeigen
     //Kalibrierung mit gefundenen Punkten
 
-    system("../build-camera_calibration-*/camera_calibration");
+    Camera_Calibration camera_calibration;
+    camera_calibration.start();
 }
 
 void CamCalib::on_start3DButton_clicked()

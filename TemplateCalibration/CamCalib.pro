@@ -38,9 +38,13 @@ LIBS += -lopencv_flann
 #LIBS += -lopencv_nonfree
 
 SOURCES += main.cpp\
-        camcalib.cpp
+        camcalib.cpp \
+    camera_calibration.cpp \
+    video_stream.cpp
 
-HEADERS  += camcalib.h
+HEADERS  += camcalib.h \
+    camera_calibration.h \
+    video_stream.h
 
 FORMS    += camcalib.ui
 
