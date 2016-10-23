@@ -36,10 +36,10 @@ static void help()
              "how to edit it.  It may be any OpenCV supported file format XML/YAML." << endl;
 }
 
-class Settings
+class MonoSettings
 {
 public:
-    Settings() : goodInput(false) {}
+    MonoSettings() : goodInput(false) {}
     enum Pattern { NOT_EXISTING, CHESSBOARD, CIRCLES_GRID, ASYMMETRIC_CIRCLES_GRID };
     enum InputType { INVALID, CAMERA, VIDEO_FILE, IMAGE_LIST };
 
@@ -222,7 +222,7 @@ private:
 
 };
 
-static inline void read(const FileNode& node, Settings& x, const Settings& default_value = Settings())
+static inline void read(const FileNode& node, MonoSettings& x, const MonoSettings& default_value = MonoSettings())
 {
     if(node.empty())
         x = default_value;
@@ -230,14 +230,14 @@ static inline void read(const FileNode& node, Settings& x, const Settings& defau
         x.read(node);
 }
 
-static inline void write(FileStorage& fs, const String&, const Settings& s )
+static inline void write(FileStorage& fs, const String&, const MonoSettings& s )
 {
     s.write(fs);
 }
 
 enum { DETECTION = 0, CAPTURING = 1, CALIBRATED = 2 };
 
-bool runCalibrationAndSave(Settings& s, Size imageSize, Mat&  cameraMatrix, Mat& distCoeffs,
+bool runCalibrationAndSave(MonoSettings& s, Size imageSize, Mat&  cameraMatrix, Mat& distCoeffs,
                            vector<vector<Point2f> > imagePoints );
 
 int Camera_Calibration::start()
@@ -245,7 +245,7 @@ int Camera_Calibration::start()
     help();
 
     //! [file_read]
-    Settings s;
+    MonoSettings s;
     const string inputSettingsFile = "../camera_calibration/default.xml";
     FileStorage fs(inputSettingsFile, FileStorage::READ); // Read the settings
     if (!fs.isOpened())
@@ -269,7 +269,7 @@ int Camera_Calibration::start()
     vector<vector<Point2f> > imagePoints;
     Mat cameraMatrix, distCoeffs;
     Size imageSize;
-    int mode = s.inputType == Settings::IMAGE_LIST ? CAPTURING : DETECTION;
+    int mode = s.inputType == MonoSettings::IMAGE_LIST ? CAPTURING : DETECTION;
     clock_t prevTimestamp = 0;
     const Scalar RED(0,0,255), GREEN(0,255,0);
     const char ESC_KEY = 27;
@@ -316,13 +316,13 @@ int Camera_Calibration::start()
 
         switch( s.calibrationPattern ) // Find feature points on the input format
         {
-        case Settings::CHESSBOARD:
+        case MonoSettings::CHESSBOARD:
             found = findChessboardCorners( view, s.boardSize, pointBuf, chessBoardFlags);
             break;
-        case Settings::CIRCLES_GRID:
+        case MonoSettings::CIRCLES_GRID:
             found = findCirclesGrid( view, s.boardSize, pointBuf );
             break;
-        case Settings::ASYMMETRIC_CIRCLES_GRID:
+        case MonoSettings::ASYMMETRIC_CIRCLES_GRID:
             found = findCirclesGrid( view, s.boardSize, pointBuf, CALIB_CB_ASYMMETRIC_GRID );
             break;
         default:
@@ -334,7 +334,7 @@ int Camera_Calibration::start()
         if ( found)                // If done with success,
         {
               // improve the found corners' coordinate accuracy for chessboard
-                if( s.calibrationPattern == Settings::CHESSBOARD)
+                if( s.calibrationPattern == MonoSettings::CHESSBOARD)
                 {
                     Mat viewGray;
                     cvtColor(view, viewGray, COLOR_BGR2GRAY);
@@ -404,7 +404,7 @@ int Camera_Calibration::start()
 
     // -----------------------Show the undistorted image for the image list ------------------------
     //! [show_results]
-    if( s.inputType == Settings::IMAGE_LIST && s.showUndistorsed )
+    if( s.inputType == MonoSettings::IMAGE_LIST && s.showUndistorsed )
     {
         Mat view, rview, map1, map2;
 
@@ -477,20 +477,20 @@ static double computeReprojectionErrors( const vector<vector<Point3f> >& objectP
 //! [compute_errors]
 //! [board_corners]
 static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Point3f>& corners,
-                                     Settings::Pattern patternType /*= Settings::CHESSBOARD*/)
+                                     MonoSettings::Pattern patternType /*= Settings::CHESSBOARD*/)
 {
     corners.clear();
 
     switch(patternType)
     {
-    case Settings::CHESSBOARD:
-    case Settings::CIRCLES_GRID:
+    case MonoSettings::CHESSBOARD:
+    case MonoSettings::CIRCLES_GRID:
         for( int i = 0; i < boardSize.height; ++i )
             for( int j = 0; j < boardSize.width; ++j )
                 corners.push_back(Point3f(j*squareSize, i*squareSize, 0));
         break;
 
-    case Settings::ASYMMETRIC_CIRCLES_GRID:
+    case MonoSettings::ASYMMETRIC_CIRCLES_GRID:
         for( int i = 0; i < boardSize.height; i++ )
             for( int j = 0; j < boardSize.width; j++ )
                 corners.push_back(Point3f((2*j + i % 2)*squareSize, i*squareSize, 0));
@@ -500,7 +500,7 @@ static void calcBoardCornerPositions(Size boardSize, float squareSize, vector<Po
     }
 }
 //! [board_corners]
-static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat& distCoeffs,
+static bool runCalibration( MonoSettings& s, Size& imageSize, Mat& cameraMatrix, Mat& distCoeffs,
                             vector<vector<Point2f> > imagePoints, vector<Mat>& rvecs, vector<Mat>& tvecs,
                             vector<float>& reprojErrs,  double& totalAvgErr)
 {
@@ -550,7 +550,7 @@ static bool runCalibration( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat
 }
 
 // Print camera parameters to the output file
-static void saveCameraParams( Settings& s, Size& imageSize, Mat& cameraMatrix, Mat& distCoeffs,
+static void saveCameraParams( MonoSettings& s, Size& imageSize, Mat& cameraMatrix, Mat& distCoeffs,
                               const vector<Mat>& rvecs, const vector<Mat>& tvecs,
                               const vector<float>& reprojErrs, const vector<vector<Point2f> >& imagePoints,
                               double totalAvgErr )
@@ -643,7 +643,7 @@ static void saveCameraParams( Settings& s, Size& imageSize, Mat& cameraMatrix, M
 }
 
 //! [run_and_save]
-bool runCalibrationAndSave(Settings& s, Size imageSize, Mat& cameraMatrix, Mat& distCoeffs,
+bool runCalibrationAndSave(MonoSettings& s, Size imageSize, Mat& cameraMatrix, Mat& distCoeffs,
                            vector<vector<Point2f> > imagePoints)
 {
     vector<Mat> rvecs, tvecs;

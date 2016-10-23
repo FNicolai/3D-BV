@@ -2,6 +2,7 @@
 #include "ui_camcalib.h"
 
 #include "camera_calibration.h"
+#include "stereo_calib.h"
 #include "video_stream.h"
 
 using namespace std;
@@ -67,5 +68,8 @@ void CamCalib::on_start3DButton_clicked()
 
     //Tipps
     //Ähnlich zu 2D Kalibrierung
+
+    Stereo_Calibration stereo_calibration;
+    stereo_calibration.start();
 
 }
