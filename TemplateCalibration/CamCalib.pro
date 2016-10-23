@@ -15,14 +15,17 @@ TEMPLATE = app
 CONFIG += link_pkgconfig
 PKGCONFIG += opencv
 
+
 SOURCES += main.cpp\
         camcalib.cpp \
     camera_calibration.cpp \
+    stereo_calib.cpp \
     video_stream.cpp
 
 HEADERS  += camcalib.h \
     camera_calibration.h \
-    video_stream.h
+    video_stream.h \
+    stereo_calib.h
 
 FORMS    += camcalib.ui
 
