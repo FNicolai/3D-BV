@@ -12,7 +12,7 @@
   <Calibrate_Pattern>"CIRCLES_GRID"</Calibrate_Pattern>
   
   <!-- The input to use for calibration. One of: CAMERAS, IMAGELIST -->
-  <InputType>"IMAGELISTS"</InputType>
+  <InputType>"CAMERAS"</InputType>
 
   <!-- The input to use for calibration. 
 		To use an input camera -> give the ID of the camera, like "1"
@@ -28,8 +28,8 @@
   <!-- Time delay between frames in case of camera. -->
   <Input_Delay>1500</Input_Delay>	
 
-  <IntrinsicsFileName>"intrinsics.yaml"</IntrinsicsFileName>	
-  
+  <IntrinsicsFile>"intrinsics.yaml"</IntrinsicsFile>
+
   <!-- How many frames to use, for calibration. -->
   <Calibrate_NrOfFrameToUse>10</Calibrate_NrOfFrameToUse>
   <!-- Consider only fy as a free parameter, the ratio fx/fy stays the same as in the input cameraMatrix. 
