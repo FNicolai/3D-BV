@@ -372,6 +372,16 @@ int Camera_Calibration::start()
 
         putText( view, msg, textOrigin, 1, 1, mode == CALIBRATED ?  GREEN : RED);
 
+        if (mode == CALIBRATED)
+        {
+            string msg = s.showUndistorsed ? "Undistorted" : "Distorted";
+            int baseLine = 0;
+            Size textSize = getTextSize(msg, 1, 1, 1, &baseLine);
+            Point textOrigin(30, view.rows - 2*baseLine - 10);
+
+            putText( view, msg, textOrigin, 1, 1, s.showUndistorsed ?  GREEN : RED);
+        }
+
         if( blinkOutput )
             bitwise_not(view, view);
         //! [output_text]
