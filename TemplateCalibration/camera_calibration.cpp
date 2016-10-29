@@ -246,7 +246,7 @@ int Camera_Calibration::start()
 
     //! [file_read]
     MonoSettings s;
-    const string inputSettingsFile = "../camera_calibration/default.xml";
+    const string inputSettingsFile = "../TemplateCalibration/mono_calib_config.xml";
     FileStorage fs(inputSettingsFile, FileStorage::READ); // Read the settings
     if (!fs.isOpened())
     {

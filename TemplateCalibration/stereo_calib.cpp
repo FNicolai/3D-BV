@@ -81,6 +81,7 @@ public:
         node["ImageListFile"] >> imageListFile;
         node["IntrinsicsFile"] >> intrinsicsFile;
         node["Input_Delay"] >> delay;
+
         validate();
     }
     void validate()
@@ -156,8 +157,15 @@ public:
                    fisheye::CALIB_FIX_K2 | fisheye::CALIB_FIX_K3 | fisheye::CALIB_FIX_K4;
         }
 
-        // NL 161022: hard coded for the beginning
-        calibrationPattern = CHESSBOARD;
+        calibrationPattern = NOT_EXISTING;
+        if (!patternToUse.compare("CHESSBOARD")) calibrationPattern = CHESSBOARD;
+        if (!patternToUse.compare("CIRCLES_GRID")) calibrationPattern = CIRCLES_GRID;
+        if (!patternToUse.compare("ASYMMETRIC_CIRCLES_GRID")) calibrationPattern = ASYMMETRIC_CIRCLES_GRID;
+        if (calibrationPattern == NOT_EXISTING)
+        {
+            cerr << " Camera calibration mode does not exist: " << patternToUse << endl;
+            goodInput = false;
+        }
 
         atImageList = 0;
 
@@ -288,14 +296,30 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
     vector<Mat> goodImageList;
 
     if (settings.inputType == StereoSettings::CAMERAS) {
+        string inputType = "";
+        switch( settings.calibrationPattern )
+        {
+        case StereoSettings::CHESSBOARD:
+            inputType = "chessboard";
+            break;
+        case StereoSettings::CIRCLES_GRID:
+            inputType = "circle grid";
+            break;
+        case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
+            inputType = "asymetric circle grid";
+            break;
+        default:
+            inputType = "chessboard";
+            break;
+        }
         cout << "You have selected CAMERAS as an input source." << endl <<
-                "Please make sure that the chessboard is visible in both camera pictures while selecting appropriate images." << endl;
+                "Please make sure that the " + inputType + " is visible in both camera pictures while selecting appropriate images." << endl;
     }
 
     for( i = j = 0; i < nimages; i++ )
     {
-        Mat leftImage = settings.nextLeftImage();
-        Mat rightImage = settings.nextRightImage();
+        //Mat leftImage = settings.nextLeftImage();
+        //Mat rightImage = settings.nextRightImage();
 
         if (settings.inputType == StereoSettings::CAMERAS) {
 
@@ -304,42 +328,108 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
                 vector<Point2f> pointBufL;
                 vector<Point2f> pointBufR;
 
-                settings.leftInputCapture >> capl;
+                bool found_left = false;
+                bool found_right = false;
+
+                // Get left and right image.
+                // Both calls as close as possible to each other to minimize time between!
+                if( settings.leftInputCapture.isOpened() && settings.rightInputCapture.isOpened() ){
+                    settings.leftInputCapture >> capl;
+                    settings.rightInputCapture >> capr;
+
+                    // Get size of image ones. Assume that left and right are same size.
+                    if( imageSize == Size() )
+                        imageSize = capl.size();
+                }else{
+                    cout << "ERROR: One of the cameras is not opened! Exit now!" << endl;
+                    return;
+                }
+
                 capl.copyTo(viewl);
                 Mat viewlGray;
                 cvtColor(viewl, viewlGray, COLOR_BGR2GRAY);
-                bool found_left = findChessboardCorners( viewlGray, settings.boardSize, pointBufL,
-                                  CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 
-                settings.rightInputCapture >> capr;
+                switch( settings.calibrationPattern ) // Find feature points on the left input format
+                {
+                case StereoSettings::CHESSBOARD:
+                    found_left = findChessboardCorners( viewlGray, settings.boardSize, pointBufL, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+                    break;
+                case StereoSettings::CIRCLES_GRID:
+                    found_left = findCirclesGrid( viewlGray, settings.boardSize, pointBufL );
+                    break;
+                case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
+                    found_left = findCirclesGrid( viewlGray, settings.boardSize, pointBufL, CALIB_CB_ASYMMETRIC_GRID );
+                    break;
+                default:
+                    found_left = false;
+                    break;
+                }
+
                 capr.copyTo(viewr);
                 Mat viewrGray;
                 cvtColor(viewr, viewrGray, COLOR_BGR2GRAY);
-                bool found_right = findChessboardCorners(viewrGray, settings.boardSize, pointBufR,
-                    CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 
-//                cout << "found left: " << (int) (found_left ? 1 : 0)
-//                     << " found right: " << (int) (found_right ? 1 : 0)  << endl;
+                switch( settings.calibrationPattern ) // Find feature points on the right input format
+                {
+                case StereoSettings::CHESSBOARD:
+                    found_right = findChessboardCorners( viewrGray, settings.boardSize, pointBufR, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+                    break;
+                case StereoSettings::CIRCLES_GRID:
+                    found_right = findCirclesGrid( viewrGray, settings.boardSize, pointBufR );
+                    break;
+                case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
+                    found_right = findCirclesGrid( viewrGray, settings.boardSize, pointBufR, CALIB_CB_ASYMMETRIC_GRID );
+                    break;
+                default:
+                    found_right = false;
+                    break;
+                }
 
                 if (found_left)
                 {
+                    if( settings.calibrationPattern == StereoSettings::CHESSBOARD){
+                        cornerSubPix(viewl, pointBufL, Size(11,11), Size(-1,-1),
+                                     TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,
+                                                  30, 0.01));
+                    }
+
                     drawChessboardCorners( viewl, settings.boardSize, Mat(pointBufL), found_left );
                 }
                 if (found_right)
                 {
+                    if( settings.calibrationPattern == StereoSettings::CHESSBOARD){
+                        cornerSubPix(viewr, pointBufR, Size(11,11), Size(-1,-1),
+                                     TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,
+                                                  30, 0.01));
+                    }
+
                     drawChessboardCorners( viewr, settings.boardSize, Mat(pointBufR), found_right );
                 }
-
 
                 imshow("viewl", viewl);
                 imshow("viewr", viewr);
                 if( found_right && found_left )
                 {
-                    cvtColor(capl, capl, COLOR_BGR2GRAY);
-                    leftImage = capl;
-                    cvtColor(capr, capr, COLOR_BGR2GRAY);
-                    rightImage = capr;
+                    //cvtColor(capl, capl, COLOR_BGR2GRAY);
+                    //leftImage = capl;
+                    //cvtColor(capr, capr, COLOR_BGR2GRAY);
+                    //rightImage = capr;
+
                     cout << nimages - i << " to go" << endl;
+
+                    imagePoints[0][i] = pointBufL;
+                    imagePoints[1][i] = pointBufR;
+
+                    if(settings.delay > 0){
+                        // Wait n seconds
+                        waitKey(settings.delay);
+                    }
+
+                    j++;
+
+                    goodImageList.push_back(viewlGray);
+                    goodImageList.push_back(viewrGray);
+
                     break;
                 }
                 waitKey(1);
@@ -347,73 +437,92 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
         }
         else
         {
-            leftImage = settings.nextLeftImage();
-            rightImage = settings.nextRightImage();
-        }
+            // Use image list. NOT testet!
+            Mat leftImage = settings.nextLeftImage();
+            Mat rightImage = settings.nextRightImage();
 
-
-        for( k = 0; k < 2; k++ )
-        {
-            Mat img = k % 2 ? leftImage : rightImage;
-
-            if(img.empty())
-                break;
-            if( imageSize == Size() )
-                imageSize = img.size();
-            else if( img.size() != imageSize )
+            for( k = 0; k < 2; k++ )
             {
-                cout << "The image has the size different from the first image size. Skipping the pair\n";
-                break;
-            }
-            bool found = false;
-            vector<Point2f>& corners = imagePoints[k][j];
-            for( int scale = 1; scale <= maxScale; scale++ )
-            {
-                Mat timg;
-                if( scale == 1 )
-                    timg = img;
-                else
-                    resize(img, timg, Size(), scale, scale);
-                found = findChessboardCorners(timg, settings.boardSize, corners,
-                    CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
-                if( found )
+                Mat img = k % 2 ? leftImage : rightImage;
+
+                if(img.empty())
+                    break;
+                if( imageSize == Size() )
+                    imageSize = img.size();
+                else if( img.size() != imageSize )
                 {
-                    if( scale > 1 )
-                    {
-                        Mat cornersMat(corners);
-                        cornersMat *= 1./scale;
-                    }
+                    cout << "The image has the size different from the first image size. Skipping the pair\n";
                     break;
                 }
+                bool found = false;
+                vector<Point2f>& corners = imagePoints[k][j];
+                for( int scale = 1; scale <= maxScale; scale++ )
+                {
+                    Mat timg;
+                    if( scale == 1 )
+                        timg = img;
+                    else
+                        resize(img, timg, Size(), scale, scale);
+
+                    switch( settings.calibrationPattern ) // Find feature points on the input format
+                    {
+                    case StereoSettings::CHESSBOARD:
+                        found = findChessboardCorners( timg, settings.boardSize, corners, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+                        break;
+                    case StereoSettings::CIRCLES_GRID:
+                        found = findCirclesGrid( timg, settings.boardSize, corners );
+                        break;
+                    case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
+                        found = findCirclesGrid( timg, settings.boardSize, corners, CALIB_CB_ASYMMETRIC_GRID );
+                        break;
+                    default:
+                        found = false;
+                        break;
+                    }
+
+                    if( found )
+                    {
+                        if( scale > 1 )
+                        {
+                            Mat cornersMat(corners);
+                            cornersMat *= 1./scale;
+                        }
+                        break;
+                    }
+                }
+                if( displayCorners )
+                {
+                    //                cout << filename << endl;
+                    Mat cimg, cimg1;
+                    cvtColor(img, cimg, COLOR_GRAY2BGR);
+                    drawChessboardCorners(cimg, settings.boardSize, corners, found);
+                    double sf = 640./MAX(img.rows, img.cols);
+                    resize(cimg, cimg1, Size(), sf, sf);
+                    imshow("corners", cimg1);
+                    char c = (char)waitKey(500);
+                    if( c == 27 || c == 'q' || c == 'Q' ) //Allow ESC to quit
+                        exit(-1);
+                }
+                else
+                    putchar('.');
+                if( !found )
+                    break;
+
+                if( settings.calibrationPattern == StereoSettings::CHESSBOARD){
+                    cornerSubPix(img, corners, Size(11,11), Size(-1,-1),
+                                 TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,
+                                              30, 0.01));
+                }
             }
-            if( displayCorners )
+            if( k == 2 )
             {
-//                cout << filename << endl;
-                Mat cimg, cimg1;
-                cvtColor(img, cimg, COLOR_GRAY2BGR);
-                drawChessboardCorners(cimg, settings.boardSize, corners, found);
-                double sf = 640./MAX(img.rows, img.cols);
-                resize(cimg, cimg1, Size(), sf, sf);
-                imshow("corners", cimg1);
-                char c = (char)waitKey(500);
-                if( c == 27 || c == 'q' || c == 'Q' ) //Allow ESC to quit
-                    exit(-1);
+                goodImageList.push_back(leftImage);
+                goodImageList.push_back(rightImage);
+                j++;
             }
-            else
-                putchar('.');
-            if( !found )
-                break;
-            cornerSubPix(img, corners, Size(11,11), Size(-1,-1),
-                         TermCriteria(TermCriteria::COUNT+TermCriteria::EPS,
-                                      30, 0.01));
-        }
-        if( k == 2 )
-        {
-            goodImageList.push_back(leftImage);
-            goodImageList.push_back(rightImage);
-            j++;
-        }
-    }
+        } // END image list
+    } // END get nimages
+
     cout << j << " pairs have been successfully detected.\n";
     nimages = j;
     if( nimages < 2 )
@@ -422,11 +531,12 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
         return;
     }
 
-    imagePoints[0].resize(nimages);
-    imagePoints[1].resize(nimages);
-    objectPoints.resize(nimages);
+    //imagePoints[0].resize(nimages);
+    //imagePoints[1].resize(nimages);
 
-    for( i = 0; i < nimages; i++ )
+    // Get the given board as digital version vec(x,y,z=0)
+    objectPoints.resize(nimages);
+        for( i = 0; i < nimages; i++ )
     {
         for( j = 0; j < settings.boardSize.height; j++ )
             for( k = 0; k < settings.boardSize.width; k++ )
@@ -502,7 +612,7 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
                   imageSize, R, T, R1, R2, P1, P2, Q,
                   CALIB_ZERO_DISPARITY, 1, imageSize, &validRoi[0], &validRoi[1]);
 
-    fs.open("extrinsics.yml", FileStorage::WRITE);
+    fs.open(settings.dataPath + "extrinsics.yml", FileStorage::WRITE);
     if( fs.isOpened() )
     {
         fs << "R" << R << "T" << T << "R1" << R1 << "R2" << R2 << "P1" << P1 << "P2" << P2 << "Q" << Q;
@@ -515,21 +625,21 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
     // or up-down camera arrangements
     bool isVerticalStereo = fabs(P2.at<double>(1, 3)) > fabs(P2.at<double>(0, 3));
 
-// COMPUTE AND DISPLAY RECTIFICATION
+    // COMPUTE AND DISPLAY RECTIFICATION
     if( !showRectified )
         return;
 
     Mat rmap[2][2];
-// IF BY CALIBRATED (BOUGUET'S METHOD)
+    // IF BY CALIBRATED (BOUGUET'S METHOD)
     if( useCalibrated )
     {
         // we already computed everything
     }
-// OR ELSE HARTLEY'S METHOD
+    // OR ELSE HARTLEY'S METHOD
     else
- // use intrinsic parameters of each camera, but
- // compute the rectification transformation directly
- // from the fundamental matrix
+    // use intrinsic parameters of each camera, but
+    // compute the rectification transformation directly
+    // from the fundamental matrix
     {
         vector<Point2f> allimgpt[2];
         for( k = 0; k < 2; k++ )
@@ -640,6 +750,6 @@ int Stereo_Calibration::start()
     //TODO: add config value
     showRectified = true;
 
-    StereoCalib(s, true, true, showRectified);
+    StereoCalib(s, false, true, showRectified);
     return 0;
 }

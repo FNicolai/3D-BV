@@ -39,4 +39,6 @@ CMakeLists.txt.user
 
 # Camera calibration
 out_camera_data.xml
-
+intrinsics.yaml
+out_mono_camera_data.xml
+extrinsics.yml
