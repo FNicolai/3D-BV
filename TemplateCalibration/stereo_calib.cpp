@@ -295,26 +295,25 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
     imagePoints[1].resize(nimages);
     vector<Mat> goodImageList;
 
-    if (settings.inputType == StereoSettings::CAMERAS) {
-        string inputType = "";
-        switch( settings.calibrationPattern )
-        {
-        case StereoSettings::CHESSBOARD:
-            inputType = "chessboard";
-            break;
-        case StereoSettings::CIRCLES_GRID:
-            inputType = "circle grid";
-            break;
-        case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
-            inputType = "asymetric circle grid";
-            break;
-        default:
-            inputType = "chessboard";
-            break;
-        }
-        cout << "You have selected CAMERAS as an input source." << endl <<
-                "Please make sure that the " + inputType + " is visible in both camera pictures while selecting appropriate images." << endl;
+    string inputType = "";
+    switch( settings.calibrationPattern )
+    {
+    case StereoSettings::CHESSBOARD:
+        inputType = "chessboard";
+        break;
+    case StereoSettings::CIRCLES_GRID:
+        inputType = "circle grid";
+        break;
+    case StereoSettings::ASYMMETRIC_CIRCLES_GRID:
+        inputType = "asymetric circle grid";
+        break;
+    default:
+        inputType = "chessboard";
+        break;
     }
+    //cout << "You have selected CAMERAS as an input source." << endl <<
+    cout << "Please make sure that the " + inputType + " is visible in both camera pictures while selecting appropriate images." << endl;
+
 
     for( i = j = 0; i < nimages; i++ )
     {
