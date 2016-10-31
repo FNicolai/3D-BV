@@ -314,7 +314,6 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
     //cout << "You have selected CAMERAS as an input source." << endl <<
     cout << "Please make sure that the " + inputType + " is visible in both camera pictures while selecting appropriate images." << endl;
 
-
     for( i = j = 0; i < nimages; i++ )
     {
         //Mat leftImage = settings.nextLeftImage();
