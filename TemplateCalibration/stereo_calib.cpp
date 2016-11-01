@@ -708,6 +708,67 @@ StereoCalib(StereoSettings &settings, bool displayCorners = false, bool useCalib
         if( c == 27 || c == 'q' || c == 'Q' )
             break;
     }
+
+
+
+    // #
+    // # Calculate disparity image
+    // #
+    Mat imgLeft, imgRight;
+    Mat imgDisparity16S, imgDisparity8U;
+    Mat imgLeftGrey, imgRightGrey;
+    Mat imgLeftRect, imgRightRect;
+
+    // Call the constructor for StereoBM
+    //int ndisparities = 16*5;   /**< Range of disparity */
+    //int SADWindowSize = 21; /**< Size of the block window. Must be odd */
+    int ndisparities = 16;   /**< Range of disparity */
+    int SADWindowSize = 9; /**< Size of the block window. Must be odd */
+
+    double minVal; double maxVal;
+
+    Ptr<StereoBM> sbm = StereoBM::create( ndisparities, SADWindowSize );
+
+    while (true)
+    {
+        if( settings.leftInputCapture.isOpened() && settings.rightInputCapture.isOpened() ){
+            settings.leftInputCapture >> imgLeft;
+            settings.rightInputCapture >> imgRight;
+        }
+
+        if( imgLeft.empty() || imgRight.empty() ){
+            cout<< " --(!) Error reading images " << endl;
+        }
+
+        cvtColor(imgLeft, imgLeftGrey, COLOR_BGR2GRAY);
+        cvtColor(imgRight, imgRightGrey, COLOR_BGR2GRAY);
+
+        // Undistort images
+        remap(imgLeftGrey, imgLeftRect, rmap[0][0], rmap[0][1], INTER_LINEAR);
+        remap(imgRightGrey, imgRightRect, rmap[1][0], rmap[1][1], INTER_LINEAR);
+
+        // Create the image in which we will save our disparities
+        imgDisparity16S = Mat( imgLeft.rows, imgLeft.cols, CV_16S );
+        imgDisparity8U = Mat( imgLeft.rows, imgLeft.cols, CV_8UC1 );
+
+        //-- 3. Calculate the disparity image
+        sbm->compute( imgLeftRect, imgRightRect, imgDisparity16S );
+
+        //-- Check its extreme values
+        minMaxLoc( imgDisparity16S, &minVal, &maxVal );
+
+        printf("Min disp: %f Max value: %f \n", minVal, maxVal);
+
+        //-- 4. Display it as a CV_8UC1 image
+        imgDisparity16S.convertTo( imgDisparity8U, CV_8UC1, 255/(maxVal - minVal));
+
+        namedWindow( "Disparity", WINDOW_NORMAL );
+        imshow( "Disparity", imgDisparity8U );
+
+        char c = (char)waitKey(1);
+        if( c == 27 || c == 'q' || c == 'Q' )
+            break;
+    }
 }
 
 
