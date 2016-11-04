@@ -20,14 +20,17 @@ SOURCES += main.cpp\
         camcalib.cpp \
     camera_calibration.cpp \
     stereo_calib.cpp \
-    video_stream.cpp
+    video_stream.cpp \
+    convolution.cpp
 
 HEADERS  += camcalib.h \
     camera_calibration.h \
     video_stream.h \
-    stereo_calib.h
+    stereo_calib.h \
+    convolution.h
 
-FORMS    += camcalib.ui
+FORMS    += camcalib.ui \
+    convolution.ui
 
 OTHER_FILES +=
 
