@@ -25,6 +25,68 @@
        </widget>
       </item>
       <item>
+       <widget class="QGroupBox" name="groupbox_filter">
+        <property name="title">
+         <string>Filters</string>
+        </property>
+        <widget class="QRadioButton" name="radio_none">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>20</y>
+           <width>102</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>None</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_canny">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>20</y>
+           <width>102</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Canny Edge</string>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_sobel">
+         <property name="geometry">
+          <rect>
+           <x>200</x>
+           <y>20</y>
+           <width>102</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Sobel</string>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radio_corner_harris">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>40</y>
+           <width>102</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Corner Harris</string>
+         </property>
+        </widget>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="start2DButton">
         <property name="text">
          <string>Start 2D Calibration</string>
@@ -48,7 +110,7 @@
      <x>0</x>
      <y>0</y>
      <width>381</width>
-     <height>25</height>
+     <height>19</height>
     </rect>
    </property>
   </widget>
