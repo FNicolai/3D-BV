@@ -35,7 +35,22 @@ void CamCalib::on_startvideoButton_clicked()
     //Falls konvertieren nicht möglich, Fehler melden
     //Ausgabe der Bilder
     //Fenster schließen
-    Video_Stream video_stream;
+    Video_Stream::filter_mode filter = Video_Stream::NONE;
+
+    if (this->ui->radio_canny->isChecked())
+    {
+        filter = Video_Stream::CANNY;
+    }
+    if (this->ui->radio_sobel->isChecked())
+    {
+        filter = Video_Stream::SOBEL;
+    }
+    if (this->ui->radio_corner_harris->isChecked())
+    {
+        filter = Video_Stream::CORNERHARRIS;
+    }
+
+    Video_Stream video_stream(filter);
     video_stream.start();
 }
 
