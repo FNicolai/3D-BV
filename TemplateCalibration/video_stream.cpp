@@ -46,8 +46,24 @@ void Video_Stream::doCornerHarris(Mat &src, Mat &dest)
   Mat dst_norm, dst_norm_scaled;
   dest = Mat::zeros( src.size(), CV_32FC1 );
 
+  Mat src_copy;
+
+  src.copyTo(src_copy);
+
+  if(src.channels() > 1){
+      cvtColor(src,src,CV_BGR2GRAY);
+  }
+
   /// Detecting corners
-  cornerHarris( src, dest, corner_harris_blockSize, corner_harris_apertureSize, (double) corner_harris_k / (double) corner_harris_k_max, BORDER_DEFAULT );
+
+
+  if (corner_harris_apertureSize % 2 && corner_harris_apertureSize > 2) {
+      cornerHarris( src, dest, corner_harris_blockSize, corner_harris_apertureSize, (double) corner_harris_k / (double) corner_harris_k_max, BORDER_DEFAULT );
+  }
+  else {
+      cout << "Please make sure you set a valid value for the kernel size!" << endl;
+      return;
+  }
 
   /// Normalizing
   normalize( dest, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
@@ -59,12 +75,13 @@ void Video_Stream::doCornerHarris(Mat &src, Mat &dest)
           {
             if( (int) dst_norm.at<float>(j,i) > corner_harris_thresh )
               {
-               circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0), 2, 8, 0 );
+               circle( src_copy, Point( i, j ), 5,  Scalar(0,0,255), 2, 8, 0 );
               }
           }
      }
 
-  dst_norm_scaled.copyTo(dest);
+  src_copy.copyTo(dest);
+//  dst_norm_scaled.copyTo(dest);
 }
 
 
@@ -156,9 +173,6 @@ int Video_Stream::start()
         }
         case CORNERHARRIS:
         {
-            if(frame.channels() > 1){
-                cvtColor(frame,frame,CV_BGR2GRAY);
-            }
             Mat inputFrame;
             frame.copyTo(inputFrame);
             doCornerHarris(inputFrame, frame);
