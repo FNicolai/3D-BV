@@ -4,6 +4,7 @@
 #include "camera_calibration.h"
 #include "stereo_calib.h"
 #include "video_stream.h"
+#include "visualfeatures.h"
 
 using namespace std;
 
@@ -87,4 +88,10 @@ void CamCalib::on_start3DButton_clicked()
     Stereo_Calibration stereo_calibration;
     stereo_calibration.start();
 
+}
+
+void CamCalib::on_startFeatureButton_clicked()
+{
+    Visual_Features features;
+    features.start();
 }

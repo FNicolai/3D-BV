@@ -40,6 +40,9 @@ private slots:
     void on_start2DButton_clicked();
 
     void on_start3DButton_clicked();
+
+    void on_startFeatureButton_clicked();
+
 private:
     Ui::CamCalib *ui;
     QString m_boardWidth;

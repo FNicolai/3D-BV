@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>381</width>
-    <height>306</height>
+    <height>383</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -97,6 +97,13 @@
        <widget class="QPushButton" name="start3DButton">
         <property name="text">
          <string>Start 3D Calibration an Rectification</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="startFeatureButton">
+        <property name="text">
+         <string>Start ORB Feature Detection</string>
         </property>
        </widget>
       </item>
