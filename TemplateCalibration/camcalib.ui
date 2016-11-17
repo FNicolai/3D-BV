@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>381</width>
-    <height>383</height>
+    <width>394</width>
+    <height>348</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,7 +32,7 @@
         <widget class="QRadioButton" name="radio_none">
          <property name="geometry">
           <rect>
-           <x>0</x>
+           <x>30</x>
            <y>20</y>
            <width>102</width>
            <height>20</height>
@@ -48,9 +48,9 @@
         <widget class="QRadioButton" name="radio_canny">
          <property name="geometry">
           <rect>
-           <x>100</x>
+           <x>150</x>
            <y>20</y>
-           <width>102</width>
+           <width>131</width>
            <height>20</height>
           </rect>
          </property>
@@ -61,8 +61,8 @@
         <widget class="QRadioButton" name="radio_sobel">
          <property name="geometry">
           <rect>
-           <x>200</x>
-           <y>20</y>
+           <x>30</x>
+           <y>40</y>
            <width>102</width>
            <height>20</height>
           </rect>
@@ -74,9 +74,9 @@
         <widget class="QRadioButton" name="radio_corner_harris">
          <property name="geometry">
           <rect>
-           <x>0</x>
+           <x>150</x>
            <y>40</y>
-           <width>102</width>
+           <width>131</width>
            <height>20</height>
           </rect>
          </property>
@@ -96,15 +96,51 @@
       <item>
        <widget class="QPushButton" name="start3DButton">
         <property name="text">
-         <string>Start 3D Calibration an Rectification</string>
+         <string>Start 3D Calibration and Rectification</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="startFeatureButton">
         <property name="text">
-         <string>Start ORB Feature Detection</string>
+         <string>Start Feature Detection</string>
         </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_matcher">
+        <property name="title">
+         <string>Matcher</string>
+        </property>
+        <widget class="QRadioButton" name="radioButton_bf">
+         <property name="geometry">
+          <rect>
+           <x>190</x>
+           <y>30</y>
+           <width>131</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Brute Force</string>
+         </property>
+        </widget>
+        <widget class="QRadioButton" name="radioButton_flann">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>30</y>
+           <width>131</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Flann Based</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </widget>
       </item>
      </layout>
@@ -116,8 +152,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>381</width>
-     <height>19</height>
+     <width>394</width>
+     <height>20</height>
     </rect>
    </property>
   </widget>

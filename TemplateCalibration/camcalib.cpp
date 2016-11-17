@@ -92,6 +92,14 @@ void CamCalib::on_start3DButton_clicked()
 
 void CamCalib::on_startFeatureButton_clicked()
 {
-    Visual_Features features;
+    Visual_Features::matcher_mode matcher = Visual_Features::FLANN_BASED_MATCHER;
+
+    if(this->ui->radioButton_bf->isChecked()){
+        matcher = Visual_Features::BRUTE_FORCE_MATCHER;
+    }else if(this->ui->radioButton_flann->isChecked()){
+        matcher = Visual_Features::FLANN_BASED_MATCHER;
+    }
+
+    Visual_Features features(matcher);
     features.start();
 }

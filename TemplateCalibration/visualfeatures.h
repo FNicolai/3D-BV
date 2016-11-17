@@ -11,6 +11,11 @@ using namespace cv;
 
 class Visual_Features
 {
+public:
+    enum matcher_mode {BRUTE_FORCE_MATCHER, FLANN_BASED_MATCHER};
+    Visual_Features (matcher_mode matcher_);
+    void start();
+
 private:
     int edge_threshold;
     int fast_threshold;
@@ -25,9 +30,7 @@ private:
 
     const float inlier_threshold = 2.5f; // Distance threshold to identify inliers
     const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
-public:
-    Visual_Features();
-    void start();
+    matcher_mode _matcher;
 };
 
 #endif // VISUALFEATURES_H
