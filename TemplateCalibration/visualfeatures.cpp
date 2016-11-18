@@ -22,9 +22,6 @@ Visual_Features::start()
     Mat img_frame;
     Mat obj_frame = imread( "../TemplateCalibration/data/object.jpg", IMREAD_GRAYSCALE );
 
-    double scaling = 0.2;
-    resize(obj_frame,obj_frame, cv::Size(), scaling, scaling);
-
     if( !obj_frame.data ){
         std::cout<< " --(!) Error reading image " << std::endl; return;
     }
