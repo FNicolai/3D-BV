@@ -6,14 +6,13 @@
 
 QT       += core gui
 
-QMAKE_CXXFLAGS += -std=c++11
-
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = pclProject
 TEMPLATE = app
 
-CONFIG += link_pkgconfig
+CONFIG += link_pkgconfig\
+    c++11
 PKGCONFIG += opencv\
     eigen3\
     pcl_2d-1.8\

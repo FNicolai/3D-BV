@@ -15,6 +15,9 @@ public:
     explicit pclProject(QWidget *parent = 0);
     ~pclProject();
 
+private slots:
+    void on_pushButton_import_and_clean_clicked();
+
 private:
     Ui::pclProject *ui;
 };

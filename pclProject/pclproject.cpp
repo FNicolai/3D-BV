@@ -14,3 +14,9 @@ pclProject::~pclProject()
 {
     delete ui;
 }
+
+void pclProject::on_pushButton_import_and_clean_clicked()
+{
+    Import_And_Clean import_and_clean;
+    import_and_clean.start();
+}
