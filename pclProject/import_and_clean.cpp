@@ -1,10 +1,9 @@
 #include "import_and_clean.h"
 
-#include <iostream>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <string>
 #include <pcl/visualization/cloud_viewer.h>
+#include <iostream>
+#include <pcl/io/io.h>
+#include <pcl/io/pcd_io.h>
 
 using namespace std;
 
@@ -37,6 +36,9 @@ void Import_And_Clean::start()
 
 
     pcl::visualization::CloudViewer viewer ("Simple Cloud Viewer");
-//    viewer.showCloud (cloud);
+    viewer.showCloud (cloud);
+    while (!viewer.wasStopped ())
+    {
+    }
 
 }
