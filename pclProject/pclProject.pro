@@ -11,6 +11,58 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = pclProject
 TEMPLATE = app
 
+INCLUDEPATH += "/usr/include/vtk-5.8"
+LIBS += -lvtkCharts\
+    -lvtkexoIIc\
+    -lvtkFiltering\
+    -lvtkDICOMParser\
+    -lvtkVolumeRendering\
+    -lvtkCommon\
+    -lvtkInfovis\
+    -lvtkGenericFiltering\
+    -lvtksys\
+    -lvtkParallel\
+    -lvtkGraphics\
+    -lvtkIO\
+    -lvtkalglib\
+    -lvtkproj4\
+    -lvtkverdict\
+    -lvtkHybrid\
+    -lvtkViews\
+    -lvtkImaging\
+    -lvtkWidgets\
+    -lvtkmetaio\
+    -lVPIC\
+    -lvtkRendering\
+    -lvtkGeovis\
+    -lCosmo\
+    -lvtkftgl\
+
+#INCLUDEPATH += "/usr/include/pcl-1.7"
+#LIBS += "-L/usr/lib"\
+    #lpcl_apps\
+    #lpcl_common\
+    #lpcl_features\
+    #lpcl_filters\
+    #lpcl_io\
+    #lpcl_io_ply\
+    #lpcl_kdtree\
+    #lpcl_keypoints\
+    #lpcl_octree\
+    #lpcl_outofcore\
+    #lpcl_people\
+    #lpcl_recognition\
+    #lpcl_registration\
+    #lpcl_sample_consensus\
+    #lpcl_search\
+    #lpcl_segmentation\
+    #lpcl_surface\
+    #lpcl_tracking\
+    #lpcl_visualization\
+
+
+
+
 CONFIG += link_pkgconfig\
     c++11
 PKGCONFIG += opencv\
@@ -49,4 +101,5 @@ FORMS    += pclproject.ui
 
 OTHER_FILES +=
 
-unix: LIBS += -lboost_system
+unix: LIBS += -lboost_system\
+
