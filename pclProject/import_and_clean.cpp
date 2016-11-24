@@ -162,6 +162,10 @@ void Import_And_Clean::start()
 
     viewer->addCoordinateSystem (1.0);
     viewer->initCameraParameters ();
+    int Axis_txt(0);
+    viewer->addText("Axis ?",10,15,"Axis",Axis_txt);
+    int Stepsize_txt(0);
+    viewer->addText("Stepsize: ?",10,30,"Stepsize",Stepsize_txt);
 
     viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
@@ -179,19 +183,19 @@ void Import_And_Clean::start()
         transform2.pretranslate(translationsVector);
         switch(axis){
         case 1:
-            viewer->updateText("Axis X",10,10,"Axis");
+            viewer->updateText("Axis X",10,15,"Axis");
             rotationsVector[0] +=deltaTorque;
             translationsVector[1] += deltaX;
             translationsVector[2] += deltaY;
             break;
         case 2:
-            viewer->updateText("Axis Y",10,10,"Axis");
+            viewer->updateText("Axis Y",10,15,"Axis");
             rotationsVector[1] +=deltaTorque;
             translationsVector[0] += deltaY;
             translationsVector[2] += deltaX;
             break;
         case 3:
-            viewer->updateText("Axis Z",10,10,"Axis");
+            viewer->updateText("Axis Z",10,15,"Axis");
             rotationsVector[2] +=deltaTorque;
             translationsVector[0] += deltaX;
             translationsVector[1] += deltaY;
