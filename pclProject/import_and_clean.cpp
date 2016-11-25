@@ -207,8 +207,18 @@ void Import_And_Clean::start()
     /*
      * Do a voxel filterung to reduce points -> faster
      */
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_visualizerCloud1 (new pcl::PointCloud<pcl::PointXYZRGB>);
-    voxel_filter(visualizerCloud1,filtered_visualizerCloud1,viewer,viewport1);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr downsampledCloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    voxel_filter(visualizerCloud1,downsampledCloud_ptr);
+
+    viewer->createViewPort (0.5, 0.0, 1.0, 1.0, viewport1);
+    viewer->setBackgroundColor (0.3, 0.3, 0.3, viewport1);
+    std::stringstream ss;
+    ss << "Downsampled cloud: " << downsampledCloud_ptr->width * downsampledCloud_ptr->height << " data points";
+    viewer->addText (ss.str() , 10, 10, "viewport1 text", viewport1);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> downsampledCloud(downsampledCloud_ptr);
+    viewer->addPointCloud<pcl::PointXYZRGB> (downsampledCloud_ptr, downsampledCloud, "downsampledCloud", viewport1);
+    viewer->addCoordinateSystem(1.0, "downsampledCloud", viewport1);
+    transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
 
     /*
      * Do segmentation and get the largest segment
@@ -218,7 +228,7 @@ void Import_And_Clean::start()
      */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    extract_indices(filtered_visualizerCloud1,planar_comp_cloud_ptr,negativ_cloud_ptr);
+    extract_indices(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
 
     viewer_seg->createViewPort(0.0, 0.0, 0.5, 1.0, viewport0);
@@ -352,9 +362,7 @@ void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 }
 
 void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
-                                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_,
-                                    boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_,
-                                    int viewport_){
+                                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_){
 
     std::cerr << "PointCloud before filtering: " << cloud_ptr_in_->width * cloud_ptr_in_->height << " data points." << std::endl;
 
@@ -363,16 +371,7 @@ void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &clou
     sor.setInputCloud (cloud_ptr_in_);
     sor.setLeafSize (0.1f, 0.1f, 0.1f);
     sor.filter (*cloud_ptr_out_);
-
     std::cerr << "PointCloud after filtering: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points." << std::endl;
-
-    viewer_->createViewPort (0.5, 0.0, 1.0, 1.0, viewport_);
-    viewer_->setBackgroundColor (0.3, 0.3, 0.3, viewport_);
-    std::stringstream ss;
-    ss << "Downsampled cloud: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points";
-    viewer_->addText (ss.str() , 10, 10, "viewport1 text", viewport_);
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> downsampledCloud(cloud_ptr_out_);
-    viewer_->addPointCloud<pcl::PointXYZRGB> (cloud_ptr_out_, downsampledCloud,"downsampledCloud", viewport_);
 }
 
 void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,

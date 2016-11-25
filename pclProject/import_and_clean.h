@@ -30,9 +30,7 @@ public:
                              pcl::ModelCoefficients::Ptr &coefficients_,
                              pcl::PointIndices::Ptr &inliers_);
     void voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
-                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_,
-                      boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_,
-                      int viewport_);
+                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
     void extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
