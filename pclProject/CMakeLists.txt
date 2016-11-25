@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(PCL_PROJECT)
 
-find_package(PCL REQUIRED COMPONENTS io common visualization segmentation sample_consensus)
+find_package(PCL REQUIRED COMPONENTS io common visualization segmentation sample_consensus filters)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
