@@ -197,14 +197,6 @@ void Import_And_Clean::start()
     transform_to_origin(visualizerCloud1, viewer, "fixedCloud");
 
     /*
-     * Get the max segmentation with planar segmentation
-     */
-    //    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-    //    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-    //    planar_segmentation(visualizerCloud1, coefficients, inliers);
-
-
-    /*
      * Do a voxel filterung to reduce points -> faster
      */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr downsampledCloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -221,14 +213,27 @@ void Import_And_Clean::start()
     transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
 
     /*
+     * Instanciate clouds for segmentation
+     * Use planar or improved_segmentation
+     */
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    /*
+     * Get the max segmentation with planar segmentation
+     */
+    planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
+
+
+    /*
      * Do segmentation and get the largest segment
      * More intelligent than planar_segmentation
      *
      * Needs viewport1 to be 0.5 in Xmax (see above)
      */
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    extract_indices(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
+    //improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
+
+
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
 
     viewer_seg->createViewPort(0.0, 0.0, 0.5, 1.0, viewport0);
@@ -321,14 +326,16 @@ void Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 }
 
 void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
-                                           pcl::ModelCoefficients::Ptr &coefficients_,
-                                           pcl::PointIndices::Ptr &inliers_)
+                                           pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                                           pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
 {
     /*
      * Planar Segmentation
      */
 
     // Create the segmentation object
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
     pcl::SACSegmentation<pcl::PointXYZRGB> seg;
 
     // Optional
@@ -337,28 +344,42 @@ void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Pt
     // Mandatory
     seg.setModelType (pcl::SACMODEL_PLANE);
     seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setDistanceThreshold (0.10);
+    seg.setDistanceThreshold (3);
+
 
     seg.setInputCloud (cloud_ptr_);
-    seg.segment (*inliers_, *coefficients_);
+    seg.segment (*inliers, *coefficients);
 
-    if (inliers_->indices.size () == 0)
+    // Create the filtering object
+    pcl::ExtractIndices<pcl::PointXYZRGB> extract;
+
+    // Extract the planar component
+    extract.setInputCloud (cloud_ptr_);
+    extract.setIndices (inliers);
+    extract.setNegative (false);
+    extract.filter (*planar_comp_cloud_ptr_);
+
+    //Extract the negative
+    extract.setNegative (true);
+    extract.filter (*negativ_cloud_ptr_);
+
+    if (inliers->indices.size () == 0)
     {
         PCL_ERROR ("Could not estimate a planar model for the given dataset.");
         return;
     }
 
-    for (size_t i = 0; i < inliers_->indices.size (); ++i)
-        std::cerr << inliers_->indices[i] << "    " << cloud_ptr_->points[inliers_->indices[i]].x << " "
-                  << cloud_ptr_->points[inliers_->indices[i]].y << " "
-                  << cloud_ptr_->points[inliers_->indices[i]].z << std::endl;
+    for (size_t i = 0; i < inliers->indices.size (); ++i)
+        std::cerr << inliers->indices[i] << "    " << cloud_ptr_->points[inliers->indices[i]].x << " "
+                  << cloud_ptr_->points[inliers->indices[i]].y << " "
+                  << cloud_ptr_->points[inliers->indices[i]].z << std::endl;
 
-    std::cerr << "Model coefficients: " << coefficients_->values[0] << " "
-              << coefficients_->values[1] << " "
-              << coefficients_->values[2] << " "
-              << coefficients_->values[3] << std::endl;
+    std::cerr << "Model coefficients: " << coefficients->values[0] << " "
+              << coefficients->values[1] << " "
+              << coefficients->values[2] << " "
+              << coefficients->values[3] << std::endl;
 
-    std::cerr << "Model inliers: " << inliers_->indices.size () << std::endl;
+    std::cerr << "Model inliers: " << inliers->indices.size () << std::endl;
 
     return;
 }
@@ -376,12 +397,13 @@ void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &clou
     std::cerr << "PointCloud after filtering: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points." << std::endl;
 }
 
-void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,
+void Import_And_Clean::improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
 {
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr max_planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    //pcl::PointCloud<pcl::PointXYZRGB>::Ptr max_planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointIndices::Ptr max_inliers (new pcl::PointIndices ());
 
     // Write the downsampled version to disk
 //    pcl::PCDWriter writer;
@@ -402,13 +424,13 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
     // Create the filtering object
     pcl::ExtractIndices<pcl::PointXYZRGB> extract;
 
-    int i = 0, nr_points = (int) filtered_cloud_ptr_->points.size ();
+    int i = 0, nr_points = (int) cloud_ptr_->points.size ();
     int max_data_points = 0;
     // While 30% of the original cloud is still there
-    while (filtered_cloud_ptr_->points.size () > 0.3 * nr_points)
+    while (cloud_ptr_->points.size () > 0.3 * nr_points)
     {
         // Segment the largest planar component from the remaining cloud
-        seg.setInputCloud (filtered_cloud_ptr_);
+        seg.setInputCloud (cloud_ptr_);
         seg.segment (*inliers, *coefficients);
         if (inliers->indices.size () == 0)
         {
@@ -417,7 +439,7 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
         }
 
         // Extract the inliers
-        extract.setInputCloud (filtered_cloud_ptr_);
+        extract.setInputCloud (cloud_ptr_);
         extract.setIndices (inliers);
         extract.setNegative (false);
         extract.filter (*planar_comp_cloud_ptr_);
@@ -429,7 +451,8 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
          */
         if(curr_data_points > max_data_points){
             max_data_points = curr_data_points;
-            pcl::copyPointCloud(*planar_comp_cloud_ptr_, *max_planar_comp_cloud_ptr);
+            max_inliers.swap(inliers);
+            //pcl::copyPointCloud(*planar_comp_cloud_ptr_, *max_planar_comp_cloud_ptr);
         }
 
 //        std::stringstream ss;
@@ -439,11 +462,21 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
         // Create the filtering object
         extract.setNegative (true);
         extract.filter (*negativ_cloud_ptr_);
-        filtered_cloud_ptr_.swap (negativ_cloud_ptr_);
+        cloud_ptr_.swap (negativ_cloud_ptr_);
         i++;
     }
 
-    planar_comp_cloud_ptr_ = max_planar_comp_cloud_ptr;
+    // Extract the final inliers
+    extract.setInputCloud (cloud_ptr_);
+    extract.setIndices (max_inliers);
+    extract.setNegative (false);
+    extract.filter (*planar_comp_cloud_ptr_);
+
+    // Create the final filtering object negativ
+    extract.setNegative (true);
+    extract.filter (*negativ_cloud_ptr_);
+
+    //planar_comp_cloud_ptr_ = max_planar_comp_cloud_ptr;
     std::cerr << "PointCloud representing the biggest planar component: "
               << planar_comp_cloud_ptr_->width * planar_comp_cloud_ptr_->height
               << " data points." << std::endl;

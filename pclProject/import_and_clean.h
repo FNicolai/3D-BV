@@ -27,11 +27,11 @@ public:
                              boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
                              ,const std::string &cloud_id_);
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
-                             pcl::ModelCoefficients::Ptr &coefficients_,
-                             pcl::PointIndices::Ptr &inliers_);
+                             pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                             pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
     void voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
-    void extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,
+    void improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
 private:
