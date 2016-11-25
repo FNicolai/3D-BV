@@ -8,6 +8,10 @@
 #include <vtkRenderWindow.h>
 #include <vtkCamera.h>
 #include <Eigen/Geometry>
+#include <pcl/common/centroid.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/point_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
 using namespace std;
 
@@ -111,8 +115,8 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
 
 void Import_And_Clean::start()
 {
-    string path = "../pclProject/pointclouds_fabian/cloud_10.pcd";
-    //string path = "../pclProject/Scan1.pcd";
+    //string path = "../pclProject/pointclouds_fabian/cloud_10.pcd";
+    string path = "../pclProject/Scan1.pcd";
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr visualizerCloud1 (new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -125,7 +129,7 @@ void Import_And_Clean::start()
     std::cout << "Loaded "
               << visualizerCloud1->width * visualizerCloud1->height
               << " data points from the pcd with the following fields: "
-              << std::endl;
+              << std::endl; 
 
     //    for (size_t i = 0; i < cloud->points.size (); ++i)
     //        std::cout << "    " << cloud->points[i].x
@@ -146,7 +150,7 @@ void Import_And_Clean::start()
     // -----Vizualizer Init-----
     //--------------------------
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor (0, 0, 0);
+    viewer->setBackgroundColor(0.05, 0.05, 0.05, 0); // Setting background to a dark grey
 
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> fixedCloud(visualizerCloud1);
     viewer->addPointCloud<pcl::PointXYZRGB> (visualizerCloud1, fixedCloud, "fixedCloud");
@@ -160,7 +164,8 @@ void Import_And_Clean::start()
     //    viewer->addCoordinateSystem(2.0,"moveableCloud",0);
     //    viewer->setCameraPosition();
 
-    viewer->addCoordinateSystem (1.0);
+    viewer->addCoordinateSystem(1.0, "fixedCloud", 0);
+
     viewer->initCameraParameters ();
     int Axis_txt(0);
     viewer->addText("Axis ?",10,15,"Axis",Axis_txt);
@@ -169,13 +174,56 @@ void Import_And_Clean::start()
 
     viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
-    Eigen::Vector3f translationsVector(0,0,0);
-    Eigen::Vector3f rotationsVector(0,0,0);
-    Eigen::Affine3f transform2;
+
+    /*
+     * Get center of pointcloud
+     */
+    Eigen::Vector4f centroid;
+    pcl::compute3DCentroid (*visualizerCloud1, centroid);
+
+    /*
+     * Get covariance matrix
+     */
+    Eigen::Matrix3f covariance_matrix;
+    pcl::computeCovarianceMatrix (*visualizerCloud1, centroid, covariance_matrix);
+
+    /*
+     * Move pointcloud to origin 0,0,0
+     */
+    Eigen::Vector3f init_translationsVector(-centroid[0],-centroid[1],-centroid[2]);
+    Eigen::Vector3f init_rotationsVector(0,0,0);
+    Eigen::Affine3f init_transform;
+
+    init_transform = Eigen::Affine3f::Identity();
+    init_transform.pretranslate(init_translationsVector);
+    viewer->updatePointCloudPose("fixedCloud",init_transform);
+
+    /*
+     * Segmentation
+     */
+//    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+//    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+
+//    // Create the segmentation object
+//    pcl::SACSegmentation<pcl::PointXYZ> seg;
+
+//    // Optional
+//    seg.setOptimizeCoefficients (true);
+
+//    // Mandatory
+//    seg.setModelType (pcl::SACMODEL_PLANE);
+//    seg.setMethodType (pcl::SAC_RANSAC);
+//    seg.setDistanceThreshold (0.01);
+
+//    seg.setInputCloud (visualizerCloud1);
+//    seg.segment (*inliers, *coefficients);
 
     viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
 
+    Eigen::Vector3f translationsVector(0,0,0);
+    Eigen::Vector3f rotationsVector(0,0,0);
+    Eigen::Affine3f transform2;
     while (!viewer->wasStopped ()){
         viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,30,"Stepsize");
         viewer->spinOnce (100);
