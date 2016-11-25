@@ -12,6 +12,8 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
 
 using namespace std;
 
@@ -201,22 +203,22 @@ void Import_And_Clean::start()
     /*
      * Segmentation
      */
-//    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-//    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 
-//    // Create the segmentation object
-//    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // Create the segmentation object
+    pcl::SACSegmentation<pcl::PointXYZRGB> seg;
 
-//    // Optional
-//    seg.setOptimizeCoefficients (true);
+    // Optional
+    seg.setOptimizeCoefficients (true);
 
-//    // Mandatory
-//    seg.setModelType (pcl::SACMODEL_PLANE);
-//    seg.setMethodType (pcl::SAC_RANSAC);
-//    seg.setDistanceThreshold (0.01);
+    // Mandatory
+    seg.setModelType (pcl::SACMODEL_PLANE);
+    seg.setMethodType (pcl::SAC_RANSAC);
+    seg.setDistanceThreshold (0.01);
 
-//    seg.setInputCloud (visualizerCloud1);
-//    seg.segment (*inliers, *coefficients);
+    seg.setInputCloud (visualizerCloud1);
+    seg.segment (*inliers, *coefficients);
 
     viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
