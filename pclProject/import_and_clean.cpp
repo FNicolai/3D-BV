@@ -236,6 +236,7 @@ void Import_And_Clean::start()
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
     viewer_seg->addCoordinateSystem(1.0, "negativ_cloud", viewport0);
+    viewer_seg->addText ("Negativ" , 10, 10, "negativ_cloud_txt", viewport0);
     transform_to_origin(negativ_cloud_ptr, viewer_seg, "negativ_cloud");
 
     viewer_seg->createViewPort(0.5, 0.0, 1.0, 1.0, viewport1);
@@ -243,6 +244,7 @@ void Import_And_Clean::start()
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr, planar_comp_cloud, "planar_comp_cloud", viewport1);
     viewer_seg->addCoordinateSystem(1.0, "planar_comp_cloud", viewport1);
+    viewer_seg->addText ("Biggest planar component" , 10, 10, "planar_comp_cloud_txt", viewport1);
     transform_to_origin(planar_comp_cloud_ptr, viewer_seg, "planar_comp_cloud");
 
     viewer_seg->initCameraParameters ();
@@ -379,6 +381,8 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
 {
 
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr max_planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
     // Write the downsampled version to disk
 //    pcl::PCDWriter writer;
 //    writer.write<pcl::PointXYZRGB> ("Scan1_downsampled.pcd", *filtered_cloud_ptr_, false);
@@ -399,6 +403,7 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
     pcl::ExtractIndices<pcl::PointXYZRGB> extract;
 
     int i = 0, nr_points = (int) filtered_cloud_ptr_->points.size ();
+    int max_data_points = 0;
     // While 30% of the original cloud is still there
     while (filtered_cloud_ptr_->points.size () > 0.3 * nr_points)
     {
@@ -416,7 +421,16 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
         extract.setIndices (inliers);
         extract.setNegative (false);
         extract.filter (*planar_comp_cloud_ptr_);
-        std::cerr << "PointCloud representing the planar component: " << planar_comp_cloud_ptr_->width * planar_comp_cloud_ptr_->height << " data points." << std::endl;
+        int curr_data_points = planar_comp_cloud_ptr_->width * planar_comp_cloud_ptr_->height;
+        std::cerr << "PointCloud representing the planar component: " << curr_data_points << " data points." << std::endl;
+
+        /*
+         * Save the biggest planar component
+         */
+        if(curr_data_points > max_data_points){
+            max_data_points = curr_data_points;
+            pcl::copyPointCloud(*planar_comp_cloud_ptr_, *max_planar_comp_cloud_ptr);
+        }
 
 //        std::stringstream ss;
 //        ss << "segmented_plane_" << i << ".pcd";
@@ -428,6 +442,11 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
         filtered_cloud_ptr_.swap (negativ_cloud_ptr_);
         i++;
     }
+
+    planar_comp_cloud_ptr_ = max_planar_comp_cloud_ptr;
+    std::cerr << "PointCloud representing the biggest planar component: "
+              << planar_comp_cloud_ptr_->width * planar_comp_cloud_ptr_->height
+              << " data points." << std::endl;
 
     return;
 }
