@@ -2,6 +2,8 @@
 #define IMPORT_AND_CLEAN_H
 
 #include <iostream>
+#include <string>
+
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -22,7 +24,8 @@ public:
     Import_And_Clean();
     void start();
     void transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
-                             boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_);
+                             boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
+                             ,const std::string &cloud_id_);
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              pcl::ModelCoefficients::Ptr &coefficients_,
                              pcl::PointIndices::Ptr &inliers_);
@@ -30,7 +33,9 @@ public:
                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_,
                       boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_,
                       int viewport_);
-    void extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_);
+    void extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,
+                         pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                         pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
 private:
 
 };

@@ -186,11 +186,15 @@ void Import_And_Clean::start()
 
     viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
+    viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
+    viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+
+
     /*
      * Transform pcl to it's origin
      * based on it's centroid
      */
-    transform_to_origin(visualizerCloud1, viewer);
+    transform_to_origin(visualizerCloud1, viewer, "fixedCloud");
 
     /*
      * Get the max segmentation with planar segmentation
@@ -212,11 +216,33 @@ void Import_And_Clean::start()
      *
      * Needs viewport1 to be 0.5 in Xmax (see above)
      */
-    extract_indices(filtered_visualizerCloud1);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    extract_indices(filtered_visualizerCloud1,planar_comp_cloud_ptr,negativ_cloud_ptr);
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
 
-    viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
-    viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+    viewer_seg->createViewPort(0.0, 0.0, 0.5, 1.0, viewport0);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport0);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
+    viewer_seg->addCoordinateSystem(1.0, "negativ_cloud", viewport0);
+    transform_to_origin(negativ_cloud_ptr, viewer_seg, "negativ_cloud");
 
+    viewer_seg->createViewPort(0.5, 0.0, 1.0, 1.0, viewport1);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr, planar_comp_cloud, "planar_comp_cloud", viewport1);
+    viewer_seg->addCoordinateSystem(1.0, "planar_comp_cloud", viewport1);
+    transform_to_origin(planar_comp_cloud_ptr, viewer_seg, "planar_comp_cloud");
+
+    viewer_seg->initCameraParameters ();
+    viewer_seg->setCameraPosition(0,0,10,0,0,0,0,1,0);
+    viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+
+
+    /*
+     * ToDo description
+     */
     Eigen::Vector3f translationsVector(0,0,0);
     Eigen::Vector3f rotationsVector(0,0,0);
     Eigen::Affine3f transform2;
@@ -261,7 +287,8 @@ void Import_And_Clean::start()
 }
 
 void Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
-                                           boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_)
+                                           boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_,
+                                           const std::string &cloud_id_)
 {
     /*
      * Get center of pointcloud
@@ -278,7 +305,7 @@ void Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 
     init_transform = Eigen::Affine3f::Identity();
     init_transform.pretranslate(init_translationsVector);
-    viewer_->updatePointCloudPose("fixedCloud",init_transform);
+    viewer_->updatePointCloudPose(cloud_id_,init_transform);
 }
 
 void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
@@ -348,10 +375,10 @@ void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &clou
     viewer_->addPointCloud<pcl::PointXYZRGB> (cloud_ptr_out_, downsampledCloud,"downsampledCloud", viewport_);
 }
 
-void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_)
+void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &filtered_cloud_ptr_,
+                                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
 {
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_p (new pcl::PointCloud<pcl::PointXYZRGB>), cloud_f (new pcl::PointCloud<pcl::PointXYZRGB>);
 
     // Write the downsampled version to disk
 //    pcl::PCDWriter writer;
@@ -389,17 +416,17 @@ void Import_And_Clean::extract_indices(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &f
         extract.setInputCloud (filtered_cloud_ptr_);
         extract.setIndices (inliers);
         extract.setNegative (false);
-        extract.filter (*cloud_p);
-        std::cerr << "PointCloud representing the planar component: " << cloud_p->width * cloud_p->height << " data points." << std::endl;
+        extract.filter (*planar_comp_cloud_ptr_);
+        std::cerr << "PointCloud representing the planar component: " << planar_comp_cloud_ptr_->width * planar_comp_cloud_ptr_->height << " data points." << std::endl;
 
 //        std::stringstream ss;
 //        ss << "segmented_plane_" << i << ".pcd";
-//        writer.write<pcl::PointXYZRGB> (ss.str (), *cloud_p, false);
+//        writer.write<pcl::PointXYZRGB> (ss.str (), *planar_comp_cloud_ptr_, false);
 
         // Create the filtering object
         extract.setNegative (true);
-        extract.filter (*cloud_f);
-        filtered_cloud_ptr_.swap (cloud_f);
+        extract.filter (*negativ_cloud_ptr_);
+        filtered_cloud_ptr_.swap (negativ_cloud_ptr_);
         i++;
     }
 
