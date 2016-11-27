@@ -23,7 +23,7 @@ class Import_And_Clean
 public:
     Import_And_Clean();
     void start();
-    void transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+    Eigen::Affine3f transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
                              ,const std::string &cloud_id_);
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,

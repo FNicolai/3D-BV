@@ -18,6 +18,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/common/transforms.h>
 
 using namespace std;
 
@@ -149,14 +150,15 @@ void Import_And_Clean::start()
     //    {
     //    }
 
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr visualizerCloud2 (new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::copyPointCloud(*visualizerCloud1, *visualizerCloud2);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr visualizerCloud2 (new pcl::PointCloud<pcl::PointXYZRGB>);
+//    pcl::copyPointCloud(*visualizerCloud1, *visualizerCloud2);
 
     //--------------------------
     // -----Vizualizer Init-----
     //--------------------------
     int viewport0(0);
     int viewport1(1);
+    int viewport2(2);
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
 
     /*
@@ -171,8 +173,8 @@ void Import_And_Clean::start()
     //    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 1.0f, 0.0f, 0.0f, "fixedCloud");
     //    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "fixedCloud");
 
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> moveableCloud(visualizerCloud2);
-    viewer->addPointCloud<pcl::PointXYZRGB> (visualizerCloud2, moveableCloud,"moveableCloud", viewport0);
+//    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> moveableCloud(visualizerCloud2);
+//    viewer->addPointCloud<pcl::PointXYZRGB> (visualizerCloud2, moveableCloud,"moveableCloud", viewport0);
 
 
     //    viewer->addCoordinateSystem(2.0,"moveableCloud",0);
@@ -184,7 +186,7 @@ void Import_And_Clean::start()
     viewer->addText("Axis ?",10,15,"Axis", viewport0);
     viewer->addText("Stepsize: ?",10,30,"Stepsize", viewport0);
 
-    viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
+//    viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
     viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
@@ -210,7 +212,10 @@ void Import_And_Clean::start()
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> downsampledCloud(downsampledCloud_ptr);
     viewer->addPointCloud<pcl::PointXYZRGB> (downsampledCloud_ptr, downsampledCloud, "downsampledCloud", viewport1);
     viewer->addCoordinateSystem(1.0, "downsampledCloud", viewport1);
-    transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
+    Eigen::Affine3f better_transform = transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
+
+    pcl::transformPointCloud(*visualizerCloud1,*visualizerCloud1,better_transform);
+    viewer->updatePointCloud(visualizerCloud1,"fixedCloud");
 
     /*
      * Instanciate clouds for segmentation
@@ -236,25 +241,51 @@ void Import_And_Clean::start()
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
 
-    viewer_seg->createViewPort(0.0, 0.0, 0.5, 1.0, viewport0);
+    viewer_seg->createViewPort(0.0, 0.0, 0.33, 1.0, viewport0);
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport0);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
     viewer_seg->addCoordinateSystem(1.0, "negativ_cloud", viewport0);
     viewer_seg->addText ("Negativ" , 10, 10, "negativ_cloud_txt", viewport0);
-    transform_to_origin(negativ_cloud_ptr, viewer_seg, "negativ_cloud");
 
-    viewer_seg->createViewPort(0.5, 0.0, 1.0, 1.0, viewport1);
+    viewer_seg->createViewPort(0.33, 0.0, 0.66, 1.0, viewport1);
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr, planar_comp_cloud, "planar_comp_cloud", viewport1);
     viewer_seg->addCoordinateSystem(1.0, "planar_comp_cloud", viewport1);
     viewer_seg->addText ("Biggest planar component" , 10, 10, "planar_comp_cloud_txt", viewport1);
-    transform_to_origin(planar_comp_cloud_ptr, viewer_seg, "planar_comp_cloud");
 
     viewer_seg->initCameraParameters ();
     viewer_seg->setCameraPosition(0,0,10,0,0,0,0,1,0);
     viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+
+    /*
+     * Rotate segment and insert it back again
+     */
+    Eigen::Vector3f seg_translationsVector(0,0,0);
+    Eigen::Vector3f seg_rotationsVector(90,0,0);
+    Eigen::Affine3f seg_transform;
+
+    seg_transform = Eigen::Affine3f::Identity();
+    seg_transform.pretranslate(seg_translationsVector);
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[0] , Eigen::Vector3f::UnitX()));
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[1] , Eigen::Vector3f::UnitY()));
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr combined_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    pcl::copyPointCloud(*planar_comp_cloud_ptr, *combined_cloud_ptr);
+
+    pcl::transformPointCloud(*combined_cloud_ptr,*combined_cloud_ptr,seg_transform);
+    *combined_cloud_ptr += *negativ_cloud_ptr;
+
+    viewer_seg->createViewPort(0.66, 0.0, 1.0, 1.0, viewport2);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport2);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> combined_cloud(combined_cloud_ptr);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (combined_cloud_ptr, combined_cloud, "combined_cloud", viewport2);
+    viewer_seg->addCoordinateSystem(1.0, "combined_cloud", viewport2);
+    viewer_seg->addText ("Combined cloud" , 10, 10, "combined_cloud_txt", viewport2);
 
 
     /*
@@ -303,7 +334,7 @@ void Import_And_Clean::start()
     }
 }
 
-void Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+Eigen::Affine3f Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                                            boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_,
                                            const std::string &cloud_id_)
 {
@@ -322,7 +353,10 @@ void Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 
     init_transform = Eigen::Affine3f::Identity();
     init_transform.pretranslate(init_translationsVector);
-    viewer_->updatePointCloudPose(cloud_id_,init_transform);
+    pcl::transformPointCloud(*cloud_ptr_,*cloud_ptr_,init_transform);
+    viewer_->updatePointCloud(cloud_ptr_,cloud_id_);
+
+    return init_transform;
 }
 
 void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
