@@ -214,6 +214,10 @@ void Import_And_Clean::start()
     viewer->addCoordinateSystem(1.0, "downsampledCloud", viewport1);
     Eigen::Affine3f better_transform = transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
 
+    /*
+     * Transform the original pointcloud to the coordinates of the
+     * downsampled cloud.
+     */
     pcl::transformPointCloud(*visualizerCloud1,*visualizerCloud1,better_transform);
     viewer->updatePointCloud(visualizerCloud1,"fixedCloud");
 
