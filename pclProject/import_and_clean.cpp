@@ -189,7 +189,7 @@ void Import_And_Clean::start()
 //    viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
     viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
-    viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+    //viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
 
 
     /*
@@ -231,7 +231,7 @@ void Import_And_Clean::start()
     /*
      * Get the max segmentation with planar segmentation
      */
-    planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
+    //planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
 
 
     /*
@@ -240,7 +240,7 @@ void Import_And_Clean::start()
      *
      * Needs viewport1 to be 0.5 in Xmax (see above)
      */
-    //improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
+    improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
 
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
@@ -261,7 +261,7 @@ void Import_And_Clean::start()
 
     viewer_seg->initCameraParameters ();
     viewer_seg->setCameraPosition(0,0,10,0,0,0,0,1,0);
-    viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+    //viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
 
     /*
      * Rotate segment and insert it back again
@@ -440,8 +440,10 @@ void Import_And_Clean::improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::
                                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
 {
 
-    //pcl::PointCloud<pcl::PointXYZRGB>::Ptr max_planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr max_planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::PointIndices::Ptr max_inliers (new pcl::PointIndices ());
+
+    pcl::copyPointCloud(*cloud_ptr_, *max_planar_comp_cloud_ptr);
 
     // Write the downsampled version to disk
 //    pcl::PCDWriter writer;
@@ -505,7 +507,7 @@ void Import_And_Clean::improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::
     }
 
     // Extract the final inliers
-    extract.setInputCloud (cloud_ptr_);
+    extract.setInputCloud (max_planar_comp_cloud_ptr);
     extract.setIndices (max_inliers);
     extract.setNegative (false);
     extract.filter (*planar_comp_cloud_ptr_);
