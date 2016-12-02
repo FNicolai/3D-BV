@@ -180,7 +180,7 @@ void Import_And_Clean::start()
     //    viewer->addCoordinateSystem(2.0,"moveableCloud",0);
     //    viewer->setCameraPosition();
 
-    viewer->addCoordinateSystem(1.0, "fixedCloud", viewport0);
+    viewer->addCoordinateSystem(1.0, viewport0);
 
     viewer->initCameraParameters ();
     viewer->addText("Axis ?",10,15,"Axis", viewport0);
@@ -211,7 +211,7 @@ void Import_And_Clean::start()
     viewer->addText (ss.str() , 10, 10, "viewport1 text", viewport1);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> downsampledCloud(downsampledCloud_ptr);
     viewer->addPointCloud<pcl::PointXYZRGB> (downsampledCloud_ptr, downsampledCloud, "downsampledCloud", viewport1);
-    viewer->addCoordinateSystem(1.0, "downsampledCloud", viewport1);
+    viewer->addCoordinateSystem(1.0, viewport1);
     Eigen::Affine3f better_transform = transform_to_origin(downsampledCloud_ptr, viewer, "downsampledCloud");
 
     /*
@@ -249,14 +249,14 @@ void Import_And_Clean::start()
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport0);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
-    viewer_seg->addCoordinateSystem(1.0, "negativ_cloud", viewport0);
+    viewer_seg->addCoordinateSystem(1.0, viewport0);
     viewer_seg->addText ("Negativ" , 10, 10, "negativ_cloud_txt", viewport0);
 
     viewer_seg->createViewPort(0.33, 0.0, 0.66, 1.0, viewport1);
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr, planar_comp_cloud, "planar_comp_cloud", viewport1);
-    viewer_seg->addCoordinateSystem(1.0, "planar_comp_cloud", viewport1);
+    viewer_seg->addCoordinateSystem(1.0, viewport1);
     viewer_seg->addText ("Biggest planar component" , 10, 10, "planar_comp_cloud_txt", viewport1);
 
     viewer_seg->initCameraParameters ();
@@ -288,7 +288,7 @@ void Import_And_Clean::start()
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport2);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> combined_cloud(combined_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (combined_cloud_ptr, combined_cloud, "combined_cloud", viewport2);
-    viewer_seg->addCoordinateSystem(1.0, "combined_cloud", viewport2);
+    viewer_seg->addCoordinateSystem(1.0, viewport2);
     viewer_seg->addText ("Combined cloud" , 10, 10, "combined_cloud_txt", viewport2);
 
 
