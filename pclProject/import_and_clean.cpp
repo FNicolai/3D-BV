@@ -209,6 +209,9 @@ void Import_And_Clean::start()
     std::stringstream ss;
     ss << "Downsampled cloud: " << downsampledCloud_ptr->width * downsampledCloud_ptr->height << " data points";
     viewer->addText (ss.str() , 10, 10, "viewport1 text", viewport1);
+    std::stringstream ss2;
+    ss2 << "Original cloud: " << visualizerCloud1->width * visualizerCloud1->height << " data points";
+    viewer->addText (ss2.str() , 10, 10, "viewport0 text", viewport0);
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> downsampledCloud(downsampledCloud_ptr);
     viewer->addPointCloud<pcl::PointXYZRGB> (downsampledCloud_ptr, downsampledCloud, "downsampledCloud", viewport1);
     viewer->addCoordinateSystem(1.0, viewport1);
@@ -299,25 +302,25 @@ void Import_And_Clean::start()
     Eigen::Vector3f rotationsVector(0,0,0);
     Eigen::Affine3f transform2;
     while (!viewer->wasStopped ()){
-        viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,30,"Stepsize");
+        viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,45,"Stepsize");
         viewer->spinOnce (100);
         transform2 = Eigen::Affine3f::Identity();
         transform2.pretranslate(translationsVector);
         switch(axis){
         case 1:
-            viewer->updateText("Axis X",10,15,"Axis");
+            viewer->updateText("Axis X",10,30,"Axis");
             rotationsVector[0] +=deltaTorque;
             translationsVector[1] += deltaX;
             translationsVector[2] += deltaY;
             break;
         case 2:
-            viewer->updateText("Axis Y",10,15,"Axis");
+            viewer->updateText("Axis Y",10,30,"Axis");
             rotationsVector[1] +=deltaTorque;
             translationsVector[0] += deltaY;
             translationsVector[2] += deltaX;
             break;
         case 3:
-            viewer->updateText("Axis Z",10,15,"Axis");
+            viewer->updateText("Axis Z",10,30,"Axis");
             rotationsVector[2] +=deltaTorque;
             translationsVector[0] += deltaX;
             translationsVector[1] += deltaY;
