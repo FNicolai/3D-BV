@@ -23,14 +23,21 @@ class Import_And_Clean
 public:
     Import_And_Clean();
     void start();
+
     Eigen::Affine3f transform_to_origin(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
                              ,const std::string &cloud_id_);
+
+    void outlier_removal(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
+                         pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
+
+    void voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
+                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
+
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
-    void voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
-                      pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
+
     void improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);

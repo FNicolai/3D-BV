@@ -18,7 +18,9 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/common/transforms.h>
+
 
 using namespace std;
 
@@ -199,6 +201,12 @@ void Import_And_Clean::start()
     transform_to_origin(visualizerCloud1, viewer, "fixedCloud");
 
     /*
+     * Removing outliers using
+     * a StatisticalOutlierRemoval filter
+     */
+    outlier_removal(visualizerCloud1, visualizerCloud1);
+
+    /*
      * Do a voxel filterung to reduce points -> faster
      */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr downsampledCloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -234,7 +242,7 @@ void Import_And_Clean::start()
     /*
      * Get the max segmentation with planar segmentation
      */
-    //planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
+    planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
 
 
     /*
@@ -243,7 +251,7 @@ void Import_And_Clean::start()
      *
      * Needs viewport1 to be 0.5 in Xmax (see above)
      */
-    improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
+    //improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
 
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
@@ -366,6 +374,35 @@ Eigen::Affine3f Import_And_Clean::transform_to_origin(pcl::PointCloud<pcl::Point
     return init_transform;
 }
 
+void Import_And_Clean::outlier_removal(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
+                                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_)
+{
+    // Create the filtering object
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+    sor.setInputCloud (cloud_ptr_in_);
+    sor.setMeanK (50);
+    sor.setStddevMulThresh (1.0);
+    sor.filter (*cloud_ptr_out_);
+
+//    sor.setNegative (true);
+//    sor.filter (*cloud_filtered);
+    return;
+}
+
+void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
+                                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_){
+
+    std::cerr << "PointCloud before filtering: " << cloud_ptr_in_->width * cloud_ptr_in_->height << " data points." << std::endl;
+
+    // Create the filtering object: downsample the dataset using a leaf size of 1cm
+    pcl::VoxelGrid< pcl::PointXYZRGB > sor;
+    sor.setInputCloud (cloud_ptr_in_);
+    sor.setLeafSize (0.1f, 0.1f, 0.1f);
+    sor.filter (*cloud_ptr_out_);
+    std::cerr << "PointCloud after filtering: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points." << std::endl;
+    return;
+}
+
 void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                                            pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                                            pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
@@ -423,19 +460,6 @@ void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Pt
     std::cerr << "Model inliers: " << inliers->indices.size () << std::endl;
 
     return;
-}
-
-void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
-                                    pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_){
-
-    std::cerr << "PointCloud before filtering: " << cloud_ptr_in_->width * cloud_ptr_in_->height << " data points." << std::endl;
-
-    // Create the filtering object: downsample the dataset using a leaf size of 1cm
-    pcl::VoxelGrid< pcl::PointXYZRGB > sor;
-    sor.setInputCloud (cloud_ptr_in_);
-    sor.setLeafSize (0.1f, 0.1f, 0.1f);
-    sor.filter (*cloud_ptr_out_);
-    std::cerr << "PointCloud after filtering: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points." << std::endl;
 }
 
 void Import_And_Clean::improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
