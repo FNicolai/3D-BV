@@ -32,7 +32,7 @@ float deltaX(0.0), deltaY(0.0);
 float deltaTorque(0.0);
 float stepSize=5;
 
-bool orthogonalMode(true), initialPositioningDone(false);
+bool orthogonalMode(false), initialPositioningDone(false), saveRequest(false);
 
 const int key_0 = 48;
 const int key_1 = 49;
@@ -60,7 +60,7 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     if(event.getKeyCode() == ',' && event.keyUp()){
         stepSize *= 5;
     }
-    viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,30,"Stepsize");
+    viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,45,"Stepsize");
 
     //default steps
     float moveSize = 0.10;
@@ -76,20 +76,20 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
 
     // X Axis
     if(event.getKeyCode() == key_1){
-        axis = 1;
-        if(orthogonalMode)
+         axis = 1;
+        //if(orthogonalMode)
             viewer->setCameraPosition(10,0,0,0,0,0,0,0,1);
     }
     // Y Axis
     if(event.getKeyCode() == key_2){
         axis = 2;
-        if(orthogonalMode)
+        //if(orthogonalMode)
             viewer->setCameraPosition(0,10,0,0,0,0,1,0,0);
     }
     // Z Axis
     if(event.getKeyCode() == key_3){
         axis = 3;
-        if(orthogonalMode)
+        //if(orthogonalMode)
             viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     }
 
@@ -119,6 +119,9 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     }
     if(event.getKeyCode() == 'i'){
         initialPositioningDone = true;
+    }
+    if(event.getKeyCode() == 's'){
+        saveRequest = true;
     }
 }
 
@@ -186,9 +189,9 @@ void Import_And_Clean::start()
 
     viewer->initCameraParameters ();
     viewer->addText("Axis ?",10,15,"Axis", viewport0);
-    viewer->addText("Stepsize: ?",10,30,"Stepsize", viewport0);
+    viewer->addText("Stepsize: ?",10,45,"Stepsize", viewport0);
 
-//    viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
+    viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
 
     viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     //viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
@@ -261,7 +264,7 @@ void Import_And_Clean::start()
     pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
     viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
     viewer_seg->addCoordinateSystem(1.0, viewport0);
-    viewer_seg->addText ("Negativ" , 10, 10, "negativ_cloud_txt", viewport0);
+    viewer_seg->addText ("Complement" , 10, 10, "negativ_cloud_txt", viewport0);
 
     viewer_seg->createViewPort(0.33, 0.0, 0.66, 1.0, viewport1);
     viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
@@ -337,7 +340,18 @@ void Import_And_Clean::start()
         transform2.rotate(Eigen::AngleAxisf(rotationsVector[0] , Eigen::Vector3f::UnitX()));
         transform2.rotate(Eigen::AngleAxisf(rotationsVector[1] , Eigen::Vector3f::UnitY()));
         transform2.rotate(Eigen::AngleAxisf(rotationsVector[2] , Eigen::Vector3f::UnitZ()));
-        viewer->updatePointCloudPose("moveableCloud",transform2);
+        //viewer->updatePointCloudPose("moveableCloud",transform2);
+
+        pcl::transformPointCloud(*downsampledCloud_ptr,*downsampledCloud_ptr,transform2);
+        viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+
+        if (saveRequest){
+            pcl::PCDWriter writer;
+            string savePath = path;
+            savePath.insert(savePath.length()-4, "_saved");
+
+            writer.write<pcl::PointXYZRGB> (savePath, *downsampledCloud_ptr, false);
+        }
 
 
         deltaTorque = 0.0;
