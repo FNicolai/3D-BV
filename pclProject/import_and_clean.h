@@ -34,6 +34,10 @@ public:
     void voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_in_,
                       pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_out_);
 
+    Eigen::Affine3f transform_to_positivXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+                             boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
+                             ,const std::string &cloud_id_);
+
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
@@ -41,6 +45,10 @@ public:
     void improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                          pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
+
+    void show_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                           pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);
+
 private:
 
 };

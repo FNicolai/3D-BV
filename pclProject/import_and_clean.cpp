@@ -204,16 +204,10 @@ void Import_And_Clean::start()
     transform_to_origin(visualizerCloud1, viewer, "fixedCloud");
 
     /*
-     * Removing outliers using
-     * a StatisticalOutlierRemoval filter
-     */
-    outlier_removal(visualizerCloud1, visualizerCloud1);
-
-    /*
      * Do a voxel filterung to reduce points -> faster
      */
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr downsampledCloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    voxel_filter(visualizerCloud1,downsampledCloud_ptr);
+    voxel_filter(visualizerCloud1, downsampledCloud_ptr);
 
     viewer->createViewPort (0.5, 0.0, 1.0, 1.0, viewport1);
     viewer->setBackgroundColor (0.3, 0.3, 0.3, viewport1);
@@ -236,16 +230,29 @@ void Import_And_Clean::start()
     viewer->updatePointCloud(visualizerCloud1,"fixedCloud");
 
     /*
+     * Removing outliers using
+     * a StatisticalOutlierRemoval filter
+     */
+    outlier_removal(downsampledCloud_ptr, downsampledCloud_ptr);
+
+    /*
+     * Transform pointcloud into positve space.
+     */
+    transform_to_positivXYZ(downsampledCloud_ptr, viewer, "downsampledCloud");
+
+
+    // ############################## Segmentation ##################################
+    /*
      * Instanciate clouds for segmentation
      * Use planar or improved_segmentation
      */
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    //pcl::PointCloud<pcl::PointXYZRGB>::Ptr planar_comp_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+    //pcl::PointCloud<pcl::PointXYZRGB>::Ptr negativ_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
 
     /*
      * Get the max segmentation with planar segmentation
      */
-    planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
+    //planar_segmentation(downsampledCloud_ptr, planar_comp_cloud_ptr,negativ_cloud_ptr);
 
 
     /*
@@ -256,54 +263,11 @@ void Import_And_Clean::start()
      */
     //improved_segmentation(downsampledCloud_ptr,planar_comp_cloud_ptr,negativ_cloud_ptr);
 
-
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
-
-    viewer_seg->createViewPort(0.0, 0.0, 0.33, 1.0, viewport0);
-    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport0);
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr);
-    viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr, negativ_cloud, "negativ_cloud", viewport0);
-    viewer_seg->addCoordinateSystem(1.0, viewport0);
-    viewer_seg->addText ("Complement" , 10, 10, "negativ_cloud_txt", viewport0);
-
-    viewer_seg->createViewPort(0.33, 0.0, 0.66, 1.0, viewport1);
-    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr);
-    viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr, planar_comp_cloud, "planar_comp_cloud", viewport1);
-    viewer_seg->addCoordinateSystem(1.0, viewport1);
-    viewer_seg->addText ("Biggest planar component" , 10, 10, "planar_comp_cloud_txt", viewport1);
-
-    viewer_seg->initCameraParameters ();
-    viewer_seg->setCameraPosition(0,0,10,0,0,0,0,1,0);
-    //viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
-
     /*
-     * Rotate segment and insert it back again
+     * Show the results of segmentation
      */
-    Eigen::Vector3f seg_translationsVector(0,0,0);
-    Eigen::Vector3f seg_rotationsVector(90,0,0);
-    Eigen::Affine3f seg_transform;
-
-    seg_transform = Eigen::Affine3f::Identity();
-    seg_transform.pretranslate(seg_translationsVector);
-    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[0] , Eigen::Vector3f::UnitX()));
-    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[1] , Eigen::Vector3f::UnitY()));
-    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[2] , Eigen::Vector3f::UnitZ()));
-
-
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr combined_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    pcl::copyPointCloud(*planar_comp_cloud_ptr, *combined_cloud_ptr);
-
-    pcl::transformPointCloud(*combined_cloud_ptr,*combined_cloud_ptr,seg_transform);
-    *combined_cloud_ptr += *negativ_cloud_ptr;
-
-    viewer_seg->createViewPort(0.66, 0.0, 1.0, 1.0, viewport2);
-    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport2);
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> combined_cloud(combined_cloud_ptr);
-    viewer_seg->addPointCloud<pcl::PointXYZRGB> (combined_cloud_ptr, combined_cloud, "combined_cloud", viewport2);
-    viewer_seg->addCoordinateSystem(1.0, viewport2);
-    viewer_seg->addText ("Combined cloud" , 10, 10, "combined_cloud_txt", viewport2);
+    //show_segmentation(planar_comp_cloud_ptr,negativ_cloud_ptr);
+    // ############################## Segmentation END ##############################
 
 
     /*
@@ -415,6 +379,55 @@ void Import_And_Clean::voxel_filter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &clou
     sor.filter (*cloud_ptr_out_);
     std::cerr << "PointCloud after filtering: " << cloud_ptr_out_->width * cloud_ptr_out_->height << " data points." << std::endl;
     return;
+}
+
+Eigen::Affine3f Import_And_Clean::transform_to_positivXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+                                                          boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
+                                                          ,const std::string &cloud_id_)
+{
+    /*
+     * Init
+     */
+    Eigen::Vector3f translationsVector(0,0,0);
+    Eigen::Vector3f rotationsVector(0,0,0);
+    Eigen::Affine3f transform;
+    double maxNegX = 0, maxNegY = 0, maxNegZ = 0;
+
+    /*
+     * Find max negativ X,Y & Z
+     */
+    for(pcl::PointCloud<pcl::PointXYZRGB>::iterator it = cloud_ptr_->begin(); it != cloud_ptr_->end(); it++){
+        if (maxNegX > it->x){
+            maxNegX = it->x;
+        }
+        if (maxNegY > it->y){
+            maxNegY = it->y;
+        }
+        if (maxNegZ > it->z){
+            maxNegZ = it->z;
+        }
+        cout << it->x << ", " << it->y << ", " << it->z << endl;
+    }
+
+    cout << "Max negative XYZ: " << maxNegX << ", " << maxNegY << ", " << maxNegZ << endl;
+
+    translationsVector[0] = -maxNegX;
+    translationsVector[1] = -maxNegY;
+    translationsVector[2] = -maxNegZ;
+
+    /*
+     * Transform
+     */
+    transform = Eigen::Affine3f::Identity();
+    transform.pretranslate(translationsVector);
+    transform.rotate(Eigen::AngleAxisf(rotationsVector[0] , Eigen::Vector3f::UnitX()));
+    transform.rotate(Eigen::AngleAxisf(rotationsVector[1] , Eigen::Vector3f::UnitY()));
+    transform.rotate(Eigen::AngleAxisf(rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+
+    pcl::transformPointCloud(*cloud_ptr_, *cloud_ptr_, transform);
+    viewer_->updatePointCloud(cloud_ptr_, cloud_id_);
+
+    return transform;
 }
 
 void Import_And_Clean::planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
@@ -563,4 +576,60 @@ void Import_And_Clean::improved_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::
               << " data points." << std::endl;
 
     return;
+}
+
+void Import_And_Clean::show_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
+                                         pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_)
+{
+    int viewport0(0);
+    int viewport1(1);
+    int viewport2(2);
+
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_seg (new pcl::visualization::PCLVisualizer ("3D Viewer seg"));
+
+    viewer_seg->createViewPort(0.0, 0.0, 0.33, 1.0, viewport0);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport0);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> negativ_cloud(negativ_cloud_ptr_);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (negativ_cloud_ptr_, negativ_cloud, "negativ_cloud", viewport0);
+    viewer_seg->addCoordinateSystem(1.0, viewport0);
+    viewer_seg->addText ("Complement" , 10, 10, "negativ_cloud_txt", viewport0);
+
+    viewer_seg->createViewPort(0.33, 0.0, 0.66, 1.0, viewport1);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport1);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> planar_comp_cloud(planar_comp_cloud_ptr_);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (planar_comp_cloud_ptr_, planar_comp_cloud, "planar_comp_cloud", viewport1);
+    viewer_seg->addCoordinateSystem(1.0, viewport1);
+    viewer_seg->addText ("Biggest planar component" , 10, 10, "planar_comp_cloud_txt", viewport1);
+
+    viewer_seg->initCameraParameters ();
+    viewer_seg->setCameraPosition(0,0,10,0,0,0,0,1,0);
+    //viewer_seg->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(1);
+
+    /*
+     * Rotate segment and insert it back again
+     */
+    Eigen::Vector3f seg_translationsVector(0,0,0);
+    Eigen::Vector3f seg_rotationsVector(90,0,0);
+    Eigen::Affine3f seg_transform;
+
+    seg_transform = Eigen::Affine3f::Identity();
+    seg_transform.pretranslate(seg_translationsVector);
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[0] , Eigen::Vector3f::UnitX()));
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[1] , Eigen::Vector3f::UnitY()));
+    seg_transform.rotate(Eigen::AngleAxisf(seg_rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr combined_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    pcl::copyPointCloud(*planar_comp_cloud_ptr_, *combined_cloud_ptr);
+
+    pcl::transformPointCloud(*combined_cloud_ptr, *combined_cloud_ptr, seg_transform);
+    *combined_cloud_ptr += *negativ_cloud_ptr_;
+
+    viewer_seg->createViewPort(0.66, 0.0, 1.0, 1.0, viewport2);
+    viewer_seg->setBackgroundColor(0.0, 0.0, 0.0, viewport2);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> combined_cloud(combined_cloud_ptr);
+    viewer_seg->addPointCloud<pcl::PointXYZRGB> (combined_cloud_ptr, combined_cloud, "combined_cloud", viewport2);
+    viewer_seg->addCoordinateSystem(1.0, viewport2);
+    viewer_seg->addText ("Combined cloud" , 10, 10, "combined_cloud_txt", viewport2);
 }
