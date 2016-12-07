@@ -19,6 +19,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/crop_box.h>
 #include <pcl/common/transforms.h>
 
 
@@ -93,30 +94,36 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
             viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     }
 
-    // Translations
-    if(event.getKeyCode() == key_4){
-        deltaX = moveSize;
+    if(pcl::visualization::KeyboardEvent::isCtrlPressed()){ // Manual alignment operations
+        // Translations
+        if(event.getKeyCode() == key_4){
+            deltaX = moveSize;
+        }
+        if(event.getKeyCode() == key_5){
+            deltaX = -moveSize;
+        }
+        if(event.getKeyCode() == key_6){
+            deltaY = moveSize;
+        }
+        if(event.getKeyCode() == key_7){
+            deltaY = -moveSize;
+        }
+        // Rotations
+        if(event.getKeyCode() == key_8){
+            deltaTorque = torqueSize;
+        }
+        if(event.getKeyCode() == key_9){
+            deltaTorque = -torqueSize;
+        }
+        if(event.getKeyCode() == 'o' && event.keyUp()){
+            orthogonalMode = !orthogonalMode;
+            viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(orthogonalMode);
+        }
+    }else{ // Cube operations
+
     }
-    if(event.getKeyCode() == key_5){
-        deltaX = -moveSize;
-    }
-    if(event.getKeyCode() == key_6){
-        deltaY = moveSize;
-    }
-    if(event.getKeyCode() == key_7){
-        deltaY = -moveSize;
-    }
-    // Rotations
-    if(event.getKeyCode() == key_8){
-        deltaTorque = torqueSize;
-    }
-    if(event.getKeyCode() == key_9){
-        deltaTorque = -torqueSize;
-    }
-    if(event.getKeyCode() == 'o' && event.keyUp()){
-        orthogonalMode = !orthogonalMode;
-        viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(orthogonalMode);
-    }
+
+
     if(event.getKeyCode() == 'i'){
         initialPositioningDone = true;
     }
@@ -240,6 +247,10 @@ void Import_And_Clean::start()
      */
     transform_to_positivXYZ(downsampledCloud_ptr, viewer, "downsampledCloud");
 
+    pcl::CropBox<pcl::PointXYZRGB> cropBoxFilter;
+    cropBoxFilter.setInputCloud(downsampledCloud_ptr);
+
+    viewer->addCube (16.2, 18.2, -7.9, -5.9, 0.21, 2.21, 1.0, 0, 0, "cube", 0);
 
     // ############################## Segmentation ##################################
     /*
