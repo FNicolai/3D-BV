@@ -33,7 +33,10 @@ float deltaX(0.0), deltaY(0.0);
 float deltaTorque(0.0);
 float stepSize=5;
 
-bool orthogonalMode(false), initialPositioningDone(false), saveRequest(false);
+bool    orthogonalMode(false),
+        initialPositioningDone(false),
+        saveRequest(false),
+        ctrlPressed(false);
 
 const int key_0 = 48;
 const int key_1 = 49;
@@ -72,7 +75,7 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     // Toogle Colour mode
     if(event.getKeyCode() == key_0){
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0f, 1.0f, 0.0f, "moveableCloud");
-        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0f, 0.0f, 1.0f, "fixedCloud");
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0f, 0.0f, 1.0f, "downsampledCloud");
     }
 
     // X Axis
@@ -94,41 +97,49 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
             viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
     }
 
-    if(pcl::visualization::KeyboardEvent::isCtrlPressed()){ // Manual alignment operations
-        // Translations
-        if(event.getKeyCode() == key_4){
-            deltaX = moveSize;
-        }
-        if(event.getKeyCode() == key_5){
-            deltaX = -moveSize;
-        }
-        if(event.getKeyCode() == key_6){
-            deltaY = moveSize;
-        }
-        if(event.getKeyCode() == key_7){
-            deltaY = -moveSize;
-        }
-        // Rotations
-        if(event.getKeyCode() == key_8){
-            deltaTorque = torqueSize;
-        }
-        if(event.getKeyCode() == key_9){
-            deltaTorque = -torqueSize;
-        }
-        if(event.getKeyCode() == 'o' && event.keyUp()){
-            orthogonalMode = !orthogonalMode;
-            viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(orthogonalMode);
-        }
-    }else{ // Cube operations
 
+    // Translations
+    if(event.getKeyCode() == key_4){
+        deltaX = moveSize;
+    }
+    if(event.getKeyCode() == key_5){
+        deltaX = -moveSize;
+    }
+    if(event.getKeyCode() == key_6){
+        deltaY = moveSize;
+    }
+    if(event.getKeyCode() == key_7){
+        deltaY = -moveSize;
+    }
+    // Rotations
+    if(event.getKeyCode() == key_8){
+        deltaTorque = torqueSize;
+    }
+    if(event.getKeyCode() == key_9){
+        deltaTorque = -torqueSize;
+    }
+    if(event.getKeyCode() == 'o' && event.keyUp()){
+        orthogonalMode = !orthogonalMode;
+        viewer->getRenderWindow()->GetRenderers()->GetFirstRenderer()->GetActiveCamera()->SetParallelProjection(orthogonalMode);
     }
 
 
     if(event.getKeyCode() == 'i'){
         initialPositioningDone = true;
+    }else{
+        initialPositioningDone = false;
     }
+
     if(event.getKeyCode() == 's'){
         saveRequest = true;
+    }else{
+        saveRequest = false;
+    }
+
+    if(event.isCtrlPressed()){
+        ctrlPressed = true;
+    }else{
+        ctrlPressed = false;
     }
 }
 
@@ -247,10 +258,27 @@ void Import_And_Clean::start()
      */
     transform_to_positivXYZ(downsampledCloud_ptr, viewer, "downsampledCloud");
 
+
+    /*
+     * Add a cropBox to clean the cloud
+     * Vector4f is requested by pcl::CropBox
+     */
+    Eigen::Vector4f minPointCropBox;
+    minPointCropBox[0]=0;  // define minimum point x
+    minPointCropBox[1]=0;  // define minimum point y
+    minPointCropBox[2]=0;  // define minimum point z
+    Eigen::Vector4f maxPointCropBox;
+    maxPointCropBox[0]=5;  // define max point x
+    maxPointCropBox[1]=6;  // define max point y
+    maxPointCropBox[2]=7;  // define max point z
+
     pcl::CropBox<pcl::PointXYZRGB> cropBoxFilter;
     cropBoxFilter.setInputCloud(downsampledCloud_ptr);
-
-    viewer->addCube (16.2, 18.2, -7.9, -5.9, 0.21, 2.21, 1.0, 0, 0, "cube", 0);
+    //viewer->addCube (16.2, 18.2, -7.9, -5.9, 0.21, 2.21, 1.0, 0, 0, "cube", viewport1);
+    viewer->addCube (minPointCropBox[0], maxPointCropBox[0],
+            minPointCropBox[1], maxPointCropBox[1],
+            minPointCropBox[2], maxPointCropBox[2],
+            1.0, 0, 0, "cube", viewport1);
 
     // ############################## Segmentation ##################################
     /*
@@ -317,8 +345,22 @@ void Import_And_Clean::start()
         transform2.rotate(Eigen::AngleAxisf(rotationsVector[2] , Eigen::Vector3f::UnitZ()));
         //viewer->updatePointCloudPose("moveableCloud",transform2);
 
-        pcl::transformPointCloud(*downsampledCloud_ptr,*downsampledCloud_ptr,transform2);
-        viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+        // Transform cloud or crobBox
+        if(ctrlPressed){
+            pcl::transformPointCloud(*downsampledCloud_ptr,*downsampledCloud_ptr,transform2);
+            viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+        }else{
+            viewer->updateShapePose("cube",transform2);
+
+            cropBoxFilter.setMin(minPointCropBox);
+            cropBoxFilter.setMax(maxPointCropBox);
+            cropBoxFilter.setTranslation(translationsVector);
+            cropBoxFilter.setRotation(rotationsVector);
+
+            cropBoxFilter.setNegative(true);
+            cropBoxFilter.filter (*downsampledCloud_ptr);
+            viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+        }
 
         if (saveRequest){
             pcl::PCDWriter writer;
@@ -417,7 +459,7 @@ Eigen::Affine3f Import_And_Clean::transform_to_positivXYZ(pcl::PointCloud<pcl::P
         if (maxNegZ > it->z){
             maxNegZ = it->z;
         }
-        cout << it->x << ", " << it->y << ", " << it->z << endl;
+        //cout << it->x << ", " << it->y << ", " << it->z << endl;
     }
 
     cout << "Max negative XYZ: " << maxNegX << ", " << maxNegY << ", " << maxNegZ << endl;
