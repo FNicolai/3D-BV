@@ -36,7 +36,8 @@ float stepSize=5;
 bool    orthogonalMode(false),
         initialPositioningDone(false),
         saveRequest(false),
-        ctrlPressed(false);
+        ctrlPressed(false),
+        cropRequest(false);
 
 const int key_0 = 48;
 const int key_1 = 49;
@@ -140,6 +141,12 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
         ctrlPressed = true;
     }else{
         ctrlPressed = false;
+    }
+
+    if(event.getKeyCode() == 'c'){
+        cropRequest = true;
+    }else{
+        cropRequest = false;
     }
 }
 
@@ -274,7 +281,8 @@ void Import_And_Clean::start()
 
     pcl::CropBox<pcl::PointXYZRGB> cropBoxFilter;
     cropBoxFilter.setInputCloud(downsampledCloud_ptr);
-    //viewer->addCube (16.2, 18.2, -7.9, -5.9, 0.21, 2.21, 1.0, 0, 0, "cube", viewport1);
+    cropBoxFilter.setNegative(true); // We want the cloud, not the waste
+
     viewer->addCube (minPointCropBox[0], maxPointCropBox[0],
             minPointCropBox[1], maxPointCropBox[1],
             minPointCropBox[2], maxPointCropBox[2],
@@ -356,8 +364,9 @@ void Import_And_Clean::start()
             cropBoxFilter.setMax(maxPointCropBox);
             cropBoxFilter.setTranslation(translationsVector);
             cropBoxFilter.setRotation(rotationsVector);
+        }
 
-            cropBoxFilter.setNegative(true);
+        if(cropRequest){
             cropBoxFilter.filter (*downsampledCloud_ptr);
             viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
         }
