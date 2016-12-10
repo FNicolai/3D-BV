@@ -38,6 +38,10 @@ public:
                              boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
                              ,const std::string &cloud_id_);
 
+    Eigen::Affine3f transform_to_minimumXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+                             boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
+                             ,const std::string &cloud_id_);
+
     void planar_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &planar_comp_cloud_ptr_,
                              pcl::PointCloud<pcl::PointXYZRGB>::Ptr &negativ_cloud_ptr_);

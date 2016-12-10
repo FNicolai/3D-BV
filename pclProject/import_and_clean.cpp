@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <limits>
 
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
@@ -37,7 +38,11 @@ bool    orthogonalMode(false),
         initialPositioningDone(false),
         saveRequest(false),
         ctrlPressed(false),
-        cropRequest(false);
+        cropRequest(false),
+        cropSizePlusRequest(false),
+        cropSizeMinusRequest(false),
+        minTranformRequest(false),
+        TranformToPositiveRequest(false);
 
 const int key_0 = 48;
 const int key_1 = 49;
@@ -50,9 +55,28 @@ const int key_7 = 55;
 const int key_8 = 56;
 const int key_9 = 57;
 
+const int key_del = 127;
+
 Import_And_Clean::Import_And_Clean()
 {
 
+}
+
+static Eigen::Quaternionf toQuaternion(double pitch, double roll, double yaw)
+{
+    Eigen::Quaternionf q;
+    double t0 = std::cos(yaw * 0.5f);
+    double t1 = std::sin(yaw * 0.5f);
+    double t2 = std::cos(roll * 0.5f);
+    double t3 = std::sin(roll * 0.5f);
+    double t4 = std::cos(pitch * 0.5f);
+    double t5 = std::sin(pitch * 0.5f);
+
+    q.w() = t0 * t2 * t4 + t1 * t3 * t5;
+    q.x() = t0 * t3 * t4 - t1 * t2 * t5;
+    q.y() = t0 * t2 * t5 + t1 * t3 * t4;
+    q.z() = t1 * t2 * t4 - t0 * t3 * t5;
+    return q;
 }
 
 void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void* viewer_){
@@ -74,25 +98,25 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     torqueSize *= stepSize;
 
     // Toogle Colour mode
-    if(event.getKeyCode() == key_0){
+    if(event.getKeyCode() == key_0 && event.keyUp()){
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0f, 1.0f, 0.0f, "moveableCloud");
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0f, 0.0f, 1.0f, "downsampledCloud");
     }
 
     // X Axis
-    if(event.getKeyCode() == key_1){
+    if(event.getKeyCode() == key_1 && event.keyUp()){
          axis = 1;
         //if(orthogonalMode)
             viewer->setCameraPosition(10,0,0,0,0,0,0,0,1);
     }
     // Y Axis
-    if(event.getKeyCode() == key_2){
+    if(event.getKeyCode() == key_2 && event.keyUp()){
         axis = 2;
         //if(orthogonalMode)
             viewer->setCameraPosition(0,10,0,0,0,0,1,0,0);
     }
     // Z Axis
-    if(event.getKeyCode() == key_3){
+    if(event.getKeyCode() == key_3 && event.keyUp()){
         axis = 3;
         //if(orthogonalMode)
             viewer->setCameraPosition(0,0,10,0,0,0,0,1,0);
@@ -100,23 +124,23 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
 
 
     // Translations
-    if(event.getKeyCode() == key_4){
+    if(event.getKeyCode() == key_4 && event.keyUp()){
         deltaX = moveSize;
     }
-    if(event.getKeyCode() == key_5){
+    if(event.getKeyCode() == key_5 && event.keyUp()){
         deltaX = -moveSize;
     }
-    if(event.getKeyCode() == key_6){
+    if(event.getKeyCode() == key_6 && event.keyUp()){
         deltaY = moveSize;
     }
-    if(event.getKeyCode() == key_7){
+    if(event.getKeyCode() == key_7 && event.keyUp()){
         deltaY = -moveSize;
     }
     // Rotations
-    if(event.getKeyCode() == key_8){
+    if(event.getKeyCode() == key_8 && event.keyUp()){
         deltaTorque = torqueSize;
     }
-    if(event.getKeyCode() == key_9){
+    if(event.getKeyCode() == key_9 && event.keyUp()){
         deltaTorque = -torqueSize;
     }
     if(event.getKeyCode() == 'o' && event.keyUp()){
@@ -125,13 +149,13 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     }
 
 
-    if(event.getKeyCode() == 'i'){
+    if(event.getKeyCode() == 'i' && event.keyUp()){
         initialPositioningDone = true;
     }else{
         initialPositioningDone = false;
     }
 
-    if(event.getKeyCode() == 's'){
+    if(event.getKeyCode() == 's' && event.keyUp()){
         saveRequest = true;
     }else{
         saveRequest = false;
@@ -140,14 +164,35 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     if(event.isCtrlPressed()){
         ctrlPressed = !ctrlPressed;
     }
-//    else{
-//        ctrlPressed = false;
-//    }
 
-    if(event.getKeyCode() == 'c'){
+    if(event.getKeyCode() == key_del && event.keyUp()){
         cropRequest = true;
     }else{
         cropRequest = false;
+    }
+
+    if(event.getKeyCode() == 'y' && event.keyUp()){
+        minTranformRequest = true;
+    }else{
+        minTranformRequest = false;
+    }
+
+    if(event.getKeyCode() == 'p' && event.keyUp()){
+        TranformToPositiveRequest = true;
+    }else{
+        TranformToPositiveRequest = false;
+    }
+
+    if(event.getKeyCode() == 'k' && event.keyUp()){
+        cropSizePlusRequest = true;
+    }else{
+        cropSizePlusRequest = false;
+    }
+
+    if(event.getKeyCode() == 'l' && event.keyUp()){
+        cropSizeMinusRequest = true;
+    }else{
+        cropSizeMinusRequest = false;
     }
 }
 
@@ -287,7 +332,7 @@ void Import_And_Clean::start()
     viewer->addCube (minPointCropBox[0], maxPointCropBox[0],
             minPointCropBox[1], maxPointCropBox[1],
             minPointCropBox[2], maxPointCropBox[2],
-            1.0, 0, 0, "cube", viewport1);
+            0.25f, 0.745f, 0.667f, "cube", viewport1);
 
     // ############################## Segmentation ##################################
     /*
@@ -412,7 +457,32 @@ void Import_And_Clean::start()
             cloud_rotationsVector[2] = 0;
 
         }else{
+            viewer->removeShape("cube", viewport1);
+
+            viewer->addCube (minPointCropBox[0], maxPointCropBox[0],
+                    minPointCropBox[1], maxPointCropBox[1],
+                    minPointCropBox[2], maxPointCropBox[2],
+                    0.25f, 0.745f, 0.667f, "cube", viewport1);
+
             viewer->updateShapePose("cube",box_transform);
+
+            /*
+             * Tried to fix this functionality for pcl 1.7/vtk5.8
+             * where updateSpapePose does not work.
+             * Works but rotation is not correct due to the fact
+             * that addCube sets a different origin
+             * (center of cube instead of corner)
+             */
+//            Eigen::Vector3f box_visual_translationsVector(box_translationsVector[0]+(maxPointCropBox[0]/2),
+//                    box_translationsVector[1]+(maxPointCropBox[1]/2),
+//                    box_translationsVector[2]+(maxPointCropBox[2]/2));
+
+//            viewer->addCube(box_visual_translationsVector,
+//                            toQuaternion(box_rotationsVector[0],box_rotationsVector[1],box_rotationsVector[2]),
+//                            maxPointCropBox[0],maxPointCropBox[0],maxPointCropBox[0],
+//                            "cube",viewport1);
+
+//            viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.25f, 0.745f, 0.667f, "cube");
 
             cropBoxFilter.setMin(minPointCropBox);
             cropBoxFilter.setMax(maxPointCropBox);
@@ -421,8 +491,38 @@ void Import_And_Clean::start()
         }
 
         if(cropRequest){
+            cout << "Cropping" << endl;
             cropBoxFilter.filter (*downsampledCloud_ptr);
             viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+            cropRequest = false;
+        }
+
+        if(minTranformRequest){
+            transform_to_minimumXYZ(downsampledCloud_ptr, viewer, "downsampledCloud");
+            viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+            minTranformRequest = false;
+        }
+
+        if(TranformToPositiveRequest){
+            transform_to_positivXYZ(downsampledCloud_ptr, viewer, "downsampledCloud");
+            viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+            TranformToPositiveRequest = false;
+        }
+
+        if(cropSizePlusRequest){
+            maxPointCropBox[0] += 1;
+            maxPointCropBox[1] += 1;
+            maxPointCropBox[2] += 1;
+            cropSizePlusRequest = false;
+        }
+
+        if(cropSizeMinusRequest){
+            if(maxPointCropBox[0] != 1){
+                maxPointCropBox[0] -= 1;
+                maxPointCropBox[1] -= 1;
+                maxPointCropBox[2] -= 1;
+            }
+            cropSizeMinusRequest = false;
         }
 
         if (saveRequest){
@@ -431,6 +531,7 @@ void Import_And_Clean::start()
             savePath.insert(savePath.length()-4, "_saved");
 
             writer.write<pcl::PointXYZRGB> (savePath, *downsampledCloud_ptr, false);
+            saveRequest = false;
         }
 
 
@@ -539,6 +640,51 @@ Eigen::Affine3f Import_And_Clean::transform_to_positivXYZ(pcl::PointCloud<pcl::P
     transform.rotate(Eigen::AngleAxisf(rotationsVector[0] , Eigen::Vector3f::UnitX()));
     transform.rotate(Eigen::AngleAxisf(rotationsVector[1] , Eigen::Vector3f::UnitY()));
     transform.rotate(Eigen::AngleAxisf(rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+
+    pcl::transformPointCloud(*cloud_ptr_, *cloud_ptr_, transform);
+    viewer_->updatePointCloud(cloud_ptr_, cloud_id_);
+
+    return transform;
+}
+
+Eigen::Affine3f Import_And_Clean::transform_to_minimumXYZ(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_ptr_,
+                                                          boost::shared_ptr<pcl::visualization::PCLVisualizer> &viewer_
+                                                          ,const std::string &cloud_id_)
+{
+    /*
+     * Init
+     */
+    Eigen::Vector3f translationsVector(0,0,0);
+    Eigen::Affine3f transform;
+    double minX = INFINITY, minY = INFINITY, minZ = INFINITY;
+
+    /*
+     * Find max negativ X,Y & Z
+     */
+    for(pcl::PointCloud<pcl::PointXYZRGB>::iterator it = cloud_ptr_->begin(); it != cloud_ptr_->end(); it++){
+        if (minX > it->x){
+            minX = it->x;
+        }
+        if (minY > it->y){
+            minY = it->y;
+        }
+        if (minZ > it->z){
+            minZ = it->z;
+        }
+        //cout << it->x << ", " << it->y << ", " << it->z << endl;
+    }
+
+    cout << "Max negative XYZ: " << minX << ", " << minY << ", " << minZ << endl;
+
+    translationsVector[0] = -minX;
+    translationsVector[1] = -minY;
+    translationsVector[2] = -minZ;
+
+    /*
+     * Transform
+     */
+    transform = Eigen::Affine3f::Identity();
+    transform.pretranslate(translationsVector);
 
     pcl::transformPointCloud(*cloud_ptr_, *cloud_ptr_, transform);
     viewer_->updatePointCloud(cloud_ptr_, cloud_id_);
@@ -749,3 +895,4 @@ void Import_And_Clean::show_segmentation(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
     viewer_seg->addCoordinateSystem(1.0, viewport2);
     viewer_seg->addText ("Combined cloud" , 10, 10, "combined_cloud_txt", viewport2);
 }
+
