@@ -138,10 +138,11 @@ void keyBoardEventOccoured(const pcl::visualization::KeyboardEvent& event, void*
     }
 
     if(event.isCtrlPressed()){
-        ctrlPressed = true;
-    }else{
-        ctrlPressed = false;
+        ctrlPressed = !ctrlPressed;
     }
+//    else{
+//        ctrlPressed = false;
+//    }
 
     if(event.getKeyCode() == 'c'){
         cropRequest = true;
@@ -213,7 +214,7 @@ void Import_And_Clean::start()
     viewer->addCoordinateSystem(1.0, viewport0);
 
     viewer->initCameraParameters ();
-    viewer->addText("Axis ?",10,15,"Axis", viewport0);
+    viewer->addText("Axis ?",10,30,"Axis", viewport0);
     viewer->addText("Stepsize: ?",10,45,"Stepsize", viewport0);
 
     viewer->registerKeyboardCallback(keyBoardEventOccoured, (void*) &viewer);
@@ -276,8 +277,8 @@ void Import_And_Clean::start()
     minPointCropBox[2]=0;  // define minimum point z
     Eigen::Vector4f maxPointCropBox;
     maxPointCropBox[0]=5;  // define max point x
-    maxPointCropBox[1]=6;  // define max point y
-    maxPointCropBox[2]=7;  // define max point z
+    maxPointCropBox[1]=5;  // define max point y
+    maxPointCropBox[2]=5;  // define max point z
 
     pcl::CropBox<pcl::PointXYZRGB> cropBoxFilter;
     cropBoxFilter.setInputCloud(downsampledCloud_ptr);
@@ -320,50 +321,103 @@ void Import_And_Clean::start()
     /*
      * ToDo description
      */
-    Eigen::Vector3f translationsVector(0,0,0);
-    Eigen::Vector3f rotationsVector(0,0,0);
-    Eigen::Affine3f transform2;
+    Eigen::Vector3f cloud_translationsVector(0,0,0);
+    Eigen::Vector3f cloud_rotationsVector(0,0,0);
+    Eigen::Affine3f cloud_transform;
+
+    Eigen::Vector3f box_translationsVector(0,0,0);
+    Eigen::Vector3f box_rotationsVector(0,0,0);
+    Eigen::Affine3f box_transform;
+
+    viewer->addText ("Ctrl: ---" , 10, 30, "viewport1 ctrlPressed", viewport1);
+
     while (!viewer->wasStopped ()){
         viewer->updateText("Stepsize: " + boost::lexical_cast<std::string>(stepSize),10,45,"Stepsize");
+
+        if(ctrlPressed){
+            viewer->updateText("Ctrl: Cloud", 10, 30, "viewport1 ctrlPressed");
+        }else{
+            viewer->updateText("Ctrl: CropBox", 10, 30, "viewport1 ctrlPressed");
+        }
+
         viewer->spinOnce (100);
-        transform2 = Eigen::Affine3f::Identity();
-        transform2.pretranslate(translationsVector);
+
+        box_transform = Eigen::Affine3f::Identity();
+        box_transform.pretranslate(box_translationsVector);
+
         switch(axis){
         case 1:
             viewer->updateText("Axis X",10,30,"Axis");
-            rotationsVector[0] +=deltaTorque;
-            translationsVector[1] += deltaX;
-            translationsVector[2] += deltaY;
+            if(ctrlPressed){
+                cloud_rotationsVector[0] = deltaTorque;
+                cloud_translationsVector[1] = deltaX;
+                cloud_translationsVector[2] = deltaY;
+            }else{
+                box_rotationsVector[0] += deltaTorque;
+                box_translationsVector[1] += deltaX;
+                box_translationsVector[2] += deltaY;
+            }
             break;
         case 2:
             viewer->updateText("Axis Y",10,30,"Axis");
-            rotationsVector[1] +=deltaTorque;
-            translationsVector[0] += deltaY;
-            translationsVector[2] += deltaX;
+
+            if(ctrlPressed){
+                cloud_rotationsVector[1] = deltaTorque;
+                cloud_translationsVector[0] = deltaY;
+                cloud_translationsVector[2] = deltaX;
+            }else{
+                box_rotationsVector[1] += deltaTorque;
+                box_translationsVector[0] += deltaY;
+                box_translationsVector[2] += deltaX;
+            }
             break;
         case 3:
             viewer->updateText("Axis Z",10,30,"Axis");
-            rotationsVector[2] +=deltaTorque;
-            translationsVector[0] += deltaX;
-            translationsVector[1] += deltaY;
+            if(ctrlPressed){
+                cloud_rotationsVector[2] = deltaTorque;
+                cloud_translationsVector[0] = deltaX;
+                cloud_translationsVector[1] = deltaY;
+            }else{
+                box_rotationsVector[2] += deltaTorque;
+                box_translationsVector[0] += deltaX;
+                box_translationsVector[1] += deltaY;
+            }
             break;
         }
-        transform2.rotate(Eigen::AngleAxisf(rotationsVector[0] , Eigen::Vector3f::UnitX()));
-        transform2.rotate(Eigen::AngleAxisf(rotationsVector[1] , Eigen::Vector3f::UnitY()));
-        transform2.rotate(Eigen::AngleAxisf(rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+        if(ctrlPressed){
+            cloud_transform = Eigen::Affine3f::Identity();
+            cloud_transform.pretranslate(cloud_translationsVector);
+
+            cloud_transform.rotate(Eigen::AngleAxisf(cloud_rotationsVector[0] , Eigen::Vector3f::UnitX()));
+            cloud_transform.rotate(Eigen::AngleAxisf(cloud_rotationsVector[1] , Eigen::Vector3f::UnitY()));
+            cloud_transform.rotate(Eigen::AngleAxisf(cloud_rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+        }else{
+            box_transform.rotate(Eigen::AngleAxisf(box_rotationsVector[0] , Eigen::Vector3f::UnitX()));
+            box_transform.rotate(Eigen::AngleAxisf(box_rotationsVector[1] , Eigen::Vector3f::UnitY()));
+            box_transform.rotate(Eigen::AngleAxisf(box_rotationsVector[2] , Eigen::Vector3f::UnitZ()));
+        }
         //viewer->updatePointCloudPose("moveableCloud",transform2);
 
         // Transform cloud or crobBox
         if(ctrlPressed){
-            pcl::transformPointCloud(*downsampledCloud_ptr,*downsampledCloud_ptr,transform2);
+            pcl::transformPointCloud(*downsampledCloud_ptr,*downsampledCloud_ptr, cloud_transform);
             viewer->updatePointCloud(downsampledCloud_ptr,"downsampledCloud");
+
+            cloud_translationsVector[0] = 0;
+            cloud_translationsVector[1] = 0;
+            cloud_translationsVector[2] = 0;
+
+            cloud_rotationsVector[0] = 0;
+            cloud_rotationsVector[1] = 0;
+            cloud_rotationsVector[2] = 0;
+
         }else{
-            viewer->updateShapePose("cube",transform2);
+            viewer->updateShapePose("cube",box_transform);
 
             cropBoxFilter.setMin(minPointCropBox);
             cropBoxFilter.setMax(maxPointCropBox);
-            cropBoxFilter.setTranslation(translationsVector);
-            cropBoxFilter.setRotation(rotationsVector);
+            cropBoxFilter.setTranslation(box_translationsVector);
+            cropBoxFilter.setRotation(box_rotationsVector);
         }
 
         if(cropRequest){
